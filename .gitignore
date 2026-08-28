@@ -40,3 +40,6 @@ next-env.d.ts
 
 # typescript
 *.tsbuildinfo
+
+# static preview build
+/.static-preview-stash/

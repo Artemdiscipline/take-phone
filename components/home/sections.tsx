@@ -1,5 +1,4 @@
 import Image from 'next/image';
-import Link from 'next/link';
 import {
   ArrowRight,
   ChevronRight,
@@ -23,6 +22,8 @@ import { categories } from '@/components/site/nav-data';
 import { CATEGORY_IMAGES } from '@/lib/catalog/images';
 import type { CatalogProduct, CategoryId } from '@/lib/catalog/types';
 import { site } from '@/lib/site';
+import { AppLink } from '@/components/site/app-link';
+import { withBase } from '@/lib/build-mode';
 
 /** Four claims that are already part of the shop's own materials. */
 const TRUST = [
@@ -72,7 +73,7 @@ export function Categories() {
 
           return (
             <Reveal key={category.id} delay={Math.min(index * 60, 240)}>
-              <Link
+              <AppLink
                 href={category.href}
                 aria-disabled={!category.ready}
                 className={`group flex h-full flex-col justify-between rounded-2xl border p-4 transition sm:p-5 ${
@@ -85,7 +86,7 @@ export function Categories() {
                   {image
                     ? (
                       <Image
-                        src={image}
+                        src={withBase(image)}
                         alt=""
                         fill
                         sizes="(max-width: 640px) 45vw, 260px"
@@ -113,7 +114,7 @@ export function Categories() {
                     <ChevronRight className="size-4 text-ink-faint transition group-hover:translate-x-0.5" aria-hidden />
                   )}
                 </div>
-              </Link>
+              </AppLink>
             </Reveal>
           );
         })}
@@ -140,13 +141,13 @@ export function FeaturedProducts({ products }: { products: CatalogProduct[] }) {
               <p className="eyebrow">Каталог iPhone</p>
               <h2 className="h2 mt-3">Актуально сейчас</h2>
             </div>
-            <Link
+            <AppLink
               href="/catalog"
               className="group hidden items-center gap-2 text-sm font-medium text-accent sm:inline-flex"
             >
               Все модели
               <ArrowRight className="size-4 transition group-hover:translate-x-0.5" aria-hidden />
-            </Link>
+            </AppLink>
           </div>
         </Reveal>
 
@@ -158,12 +159,12 @@ export function FeaturedProducts({ products }: { products: CatalogProduct[] }) {
           ))}
         </div>
 
-        <Link
+        <AppLink
           href="/catalog"
           className="mt-6 flex h-12 items-center justify-center rounded-xl border border-line bg-paper text-sm font-medium sm:hidden"
         >
           Весь каталог
-        </Link>
+        </AppLink>
       </div>
     </section>
   );
@@ -246,13 +247,13 @@ export function ServicePromo() {
               ))}
             </div>
 
-            <Link
+            <AppLink
               href="/service"
               className="group mt-8 inline-flex items-center gap-2 text-sm font-medium text-accent"
             >
               Подробнее о гарантии и сервисе
               <ArrowRight className="size-4 transition group-hover:translate-x-0.5" aria-hidden />
-            </Link>
+            </AppLink>
           </div>
         </Reveal>
 

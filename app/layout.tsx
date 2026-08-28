@@ -5,6 +5,7 @@ import { RequestDrawer } from '@/components/order/request-drawer';
 import { RequestProvider } from '@/components/order/request-store';
 import { Footer } from '@/components/site/footer';
 import { Header } from '@/components/site/header';
+import { withBase } from '@/lib/build-mode';
 import { site } from '@/lib/site';
 import './globals.css';
 
@@ -24,20 +25,20 @@ export const metadata: Metadata = {
   description,
   applicationName: site.name,
   keywords: ['iPhone Тюмень', 'купить айфон Тюмень', 'Take Phone', 'техника Тюмень', 'trade-in Тюмень'],
-  icons: { icon: '/favicon.svg' },
+  icons: { icon: withBase('/favicon.svg') },
   openGraph: {
     type: 'website',
     locale: 'ru_RU',
     siteName: site.name,
     title,
     description,
-    images: [{ url: '/assets/hero/iphone-17-pro-lineup.webp', width: 2000, height: 1125 }],
+    images: [{ url: withBase('/assets/hero/iphone-17-pro-lineup.webp'), width: 2000, height: 1125 }],
   },
   twitter: {
     card: 'summary_large_image',
     title,
     description,
-    images: ['/assets/hero/iphone-17-pro-lineup.webp'],
+    images: [withBase('/assets/hero/iphone-17-pro-lineup.webp')],
   },
   robots: { index: true, follow: true },
 };

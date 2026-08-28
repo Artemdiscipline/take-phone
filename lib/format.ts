@@ -32,6 +32,18 @@ export function formatDateTime(iso: string): string {
   return dateTimeFormatter.format(new Date(iso));
 }
 
+/**
+ * Метка свежести данных.
+ *
+ * В статической витрине страница собрана заранее, поэтому «N минут назад»
+ * было бы и неправдой, и причиной рассинхрона гидратации: сервер посчитал бы
+ * интервал на момент сборки, а браузер — на момент открытия. Там показывается
+ * фактическая дата среза.
+ */
+export function formatFreshness(iso: string, isStatic: boolean): string {
+  return isStatic ? formatDateTime(iso) : formatRelative(iso);
+}
+
 /** "5 минут назад" style label used for freshness badges. */
 export function formatRelative(iso: string, now: number = Date.now()): string {
   const diffMinutes = Math.max(0, Math.round((now - new Date(iso).getTime()) / 60_000));

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { RefreshCw, ShieldCheck, Store, UserRoundCog } from 'lucide-react';
+import { AppLink } from '@/components/site/app-link';
 
 import { Reveal } from '@/components/site/reveal';
 import { site } from '@/lib/site';
@@ -37,7 +37,7 @@ export default function ServicePage() {
   return (
     <div className="shell py-8 lg:py-12">
       <nav aria-label="Хлебные крошки" className="text-[13px] text-ink-faint">
-        <Link href="/" className="transition hover:text-accent">Главная</Link>
+        <AppLink href="/" className="transition hover:text-accent">Главная</AppLink>
         <span className="mx-2">/</span>
         <span className="text-ink-soft">Гарантия и сервис</span>
       </nav>

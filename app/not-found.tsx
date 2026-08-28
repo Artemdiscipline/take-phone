@@ -1,5 +1,4 @@
-import Link from 'next/link';
-
+import { AppLink } from '@/components/site/app-link';
 export default function NotFound() {
   return (
     <div className="shell grid min-h-[50vh] place-items-center py-20 text-center">
@@ -9,12 +8,12 @@ export default function NotFound() {
         <p className="lede mx-auto mt-3 max-w-[420px]">
           Возможно, устройство больше не в каталоге или ссылка устарела.
         </p>
-        <Link
+        <AppLink
           href="/catalog"
           className="mt-7 inline-flex h-12 items-center rounded-xl bg-plum px-6 text-sm font-medium text-white transition hover:bg-plum-soft"
         >
           Открыть каталог
-        </Link>
+        </AppLink>
       </div>
     </div>
   );

@@ -1,5 +1,4 @@
 import Image from 'next/image';
-import Link from 'next/link';
 import { ArrowRight, MessageCircle } from 'lucide-react';
 
 import { AvailabilityLabel } from '@/components/catalog/availability';
@@ -7,6 +6,8 @@ import { HERO_IMAGE } from '@/lib/catalog/images';
 import type { CatalogProduct } from '@/lib/catalog/types';
 import { formatPrice } from '@/lib/format';
 import { site } from '@/lib/site';
+import { AppLink } from '@/components/site/app-link';
+import { withBase } from '@/lib/build-mode';
 
 /**
  * First screen. The price and availability shown here come from the same
@@ -44,13 +45,13 @@ export function Hero({ featured }: { featured: CatalogProduct | null }) {
           )}
 
           <div className="mt-8 flex flex-col gap-2.5 sm:flex-row">
-            <Link
+            <AppLink
               href="/catalog"
               className="group inline-flex h-12 items-center justify-center gap-2.5 rounded-xl bg-plum px-6 text-sm font-medium text-white transition hover:bg-plum-soft"
             >
               Смотреть каталог
               <ArrowRight className="size-4 transition group-hover:translate-x-0.5" aria-hidden />
-            </Link>
+            </AppLink>
             <a
               href={site.telegram}
               target="_blank"
@@ -65,7 +66,7 @@ export function Hero({ featured }: { featured: CatalogProduct | null }) {
 
         <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-surface lg:aspect-[16/9]">
           <Image
-            src={HERO_IMAGE}
+            src={withBase(HERO_IMAGE)}
             alt="Линейка iPhone 17 Pro"
             fill
             sizes="(max-width: 1024px) 100vw, 720px"

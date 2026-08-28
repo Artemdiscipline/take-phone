@@ -1,8 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import {
   Check,
@@ -18,8 +16,10 @@ import { ProductCard } from '@/components/catalog/product-card';
 import { useRequest } from '@/components/order/request-store';
 import { colorRu, formatMemory } from '@/lib/catalog/normalize';
 import type { CatalogProduct } from '@/lib/catalog/types';
-import { formatPrice, formatRelative } from '@/lib/format';
+import { isStaticPreview, withBase } from '@/lib/build-mode';
+import { formatFreshness, formatPrice } from '@/lib/format';
 import { site, terms } from '@/lib/site';
+import { AppLink, useNavigate } from '@/components/site/app-link';
 
 export function ProductDetail({
   product,
@@ -30,7 +30,7 @@ export function ProductDetail({
   variants: CatalogProduct[];
   related: CatalogProduct[];
 }) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { add, has, toggleFavourite, isFavourite, open } = useRequest();
   const [activeImage, setActiveImage] = useState(0);
 
@@ -48,7 +48,7 @@ export function ProductDetail({
   ]).slice(0, 5);
 
   const goTo = (next: CatalogProduct | undefined) => {
-    if (next && next.slug !== product.slug) router.push(`/product/${next.slug}`);
+    if (next && next.slug !== product.slug) navigate(`/product/${next.slug}`);
   };
 
   return (
@@ -57,7 +57,7 @@ export function ProductDetail({
         <div>
           <div className="relative aspect-square overflow-hidden rounded-2xl bg-surface">
             <Image
-              src={gallery[activeImage] ?? product.images[0]}
+              src={withBase(gallery[activeImage] ?? product.images[0])}
               alt={product.title}
               fill
               sizes="(max-width: 1024px) 100vw, 620px"
@@ -79,7 +79,7 @@ export function ProductDetail({
                       index === activeImage ? 'border-accent' : 'border-line hover:border-line-strong'
                     }`}
                   >
-                    <Image src={image} alt="" fill sizes="68px" className="object-contain p-2" />
+                    <Image src={withBase(image)} alt="" fill sizes="68px" className="object-contain p-2" />
                   </button>
                 </li>
               ))}
@@ -91,7 +91,7 @@ export function ProductDetail({
           <div className="flex items-center justify-between gap-4">
             <AvailabilityChip availability={product.availability} />
             <span className="text-[12px] text-ink-faint">
-              Цена обновлена {formatRelative(product.updatedAt)}
+              Цена обновлена {formatFreshness(product.updatedAt, isStaticPreview)}
             </span>
           </div>
 
@@ -243,9 +243,9 @@ export function ProductDetail({
         <section className="mt-16 border-t border-line pt-12 lg:mt-24">
           <div className="flex items-end justify-between gap-4">
             <h2 className="h3">Похожие устройства</h2>
-            <Link href="/catalog" className="text-sm text-accent transition hover:opacity-70">
+            <AppLink href="/catalog" className="text-sm text-accent transition hover:opacity-70">
               Весь каталог
-            </Link>
+            </AppLink>
           </div>
           <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {related.map((item) => <ProductCard key={item.id} product={item} />)}

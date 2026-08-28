@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { Banknote, CreditCard, Store, Truck, Wallet } from 'lucide-react';
+import { AppLink } from '@/components/site/app-link';
 
 import { formatPrice } from '@/lib/format';
 import { site, terms } from '@/lib/site';
@@ -16,7 +16,7 @@ export default function DeliveryPage() {
   return (
     <div className="shell py-8 lg:py-12">
       <nav aria-label="Хлебные крошки" className="text-[13px] text-ink-faint">
-        <Link href="/" className="transition hover:text-accent">Главная</Link>
+        <AppLink href="/" className="transition hover:text-accent">Главная</AppLink>
         <span className="mx-2">/</span>
         <span className="text-ink-soft">Доставка и оплата</span>
       </nav>

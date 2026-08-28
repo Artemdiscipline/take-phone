@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { useState } from 'react';
 import {
   ArrowRight,
@@ -23,11 +22,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { isStaticPreview, withBase } from '@/lib/build-mode';
 import { colorRu } from '@/lib/catalog/normalize';
 import { applyCardFee, cardFeeAmount } from '@/lib/catalog/pricing';
 import { formatPrice } from '@/lib/format';
 import { site, terms } from '@/lib/site';
 import { useRequest } from './request-store';
+import { AppLink } from '@/components/site/app-link';
 
 type Delivery = 'pickup' | 'delivery';
 type Payment = 'transfer' | 'cash' | 'card';
@@ -35,7 +36,7 @@ type Payment = 'transfer' | 'cash' | 'card';
 interface Submitted {
   id: string;
   total: number;
-  delivered: 'demo' | 'webhook' | 'telegram';
+  delivered: 'demo' | 'webhook' | 'telegram' | 'preview';
 }
 
 export function RequestDrawer() {
@@ -55,6 +56,14 @@ export function RequestDrawer() {
 
   const submit = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    // Статическая витрина: серверного маршрута нет, поэтому заявку показываем
+    // как неотправленную, а не имитируем приём.
+    if (isStaticPreview) {
+      setSubmitted({ id: '', total, delivered: 'preview' });
+      return;
+    }
+
     setSending(true);
     setErrors({});
 
@@ -137,16 +146,16 @@ export function RequestDrawer() {
                     {items.map((item) => (
                       <div key={item.matchKey} className="flex items-center gap-3 rounded-xl border border-line p-2.5">
                         <div className="relative size-16 shrink-0 overflow-hidden rounded-lg bg-surface">
-                          <Image src={item.image} alt="" fill sizes="64px" className="object-contain p-1.5" />
+                          <Image src={withBase(item.image)} alt="" fill sizes="64px" className="object-contain p-1.5" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <Link
+                          <AppLink
                             href={`/product/${item.slug}`}
                             onClick={() => setOpen(false)}
                             className="block text-sm font-medium leading-snug transition hover:text-accent"
                           >
                             {item.title}
-                          </Link>
+                          </AppLink>
                           <p className="mt-0.5 text-[12px] text-ink-faint">
                             {item.memoryLabel} · {colorRu(item.color) ?? item.color}
                           </p>
@@ -405,13 +414,13 @@ function EmptyState({ onClose }: { onClose: () => void }) {
         <ShoppingBag className="mx-auto size-7 text-ink-faint" aria-hidden />
         <p className="mt-5 text-lg font-medium">В заявке пока пусто</p>
         <p className="mt-1.5 text-sm text-ink-soft">Выберите устройство в каталоге.</p>
-        <Link
+        <AppLink
           href="/catalog"
           onClick={onClose}
           className="mt-6 inline-flex h-11 items-center rounded-xl bg-plum px-5 text-sm font-medium text-white transition hover:bg-plum-soft"
         >
           Открыть каталог
-        </Link>
+        </AppLink>
       </div>
     </div>
   );
@@ -421,15 +430,31 @@ function SuccessState({ submitted, onClose }: { submitted: Submitted; onClose: (
   return (
     <div className="grid flex-1 place-items-center p-8 text-center">
       <div className="max-w-[380px]">
-        <span className="mx-auto grid size-14 place-items-center rounded-full bg-stock-soft text-stock">
-          <Check className="size-6" aria-hidden />
+        <span className={`mx-auto grid size-14 place-items-center rounded-full ${
+          submitted.delivered === 'preview' ? 'bg-order-soft text-order' : 'bg-stock-soft text-stock'
+        }`}>
+          {submitted.delivered === 'preview'
+            ? <Info className="size-6" aria-hidden />
+            : <Check className="size-6" aria-hidden />}
         </span>
-        <p className="mt-6 text-xl font-semibold tracking-[-0.02em]">Заявка принята</p>
+        <p className="mt-6 text-xl font-semibold tracking-[-0.02em]">
+          {submitted.delivered === 'preview' ? 'Заявка не отправлена' : 'Заявка принята'}
+        </p>
         <p className="mt-2 text-sm text-ink-soft">
-          Номер заявки {submitted.id}. Ориентировочная сумма {formatPrice(submitted.total)}.
+          {submitted.delivered === 'preview'
+            ? `Ориентировочная сумма ${formatPrice(submitted.total)}.`
+            : `Номер заявки ${submitted.id}. Ориентировочная сумма ${formatPrice(submitted.total)}.`}
         </p>
 
-        {submitted.delivered === 'demo'
+        {submitted.delivered === 'preview'
+          ? (
+            <p className="mt-4 rounded-xl bg-order-soft p-3 text-[12px] leading-relaxed text-order">
+              Это витрина-превью для ознакомления: она собрана как набор
+              статических страниц, поэтому заявки отсюда не уходят. Позвоните
+              или напишите в Telegram — оформим заказ вручную.
+            </p>
+          )
+          : submitted.delivered === 'demo'
           ? (
             <p className="mt-4 rounded-xl bg-order-soft p-3 text-[12px] leading-relaxed text-order">
               Демонстрационный режим: канал доставки заявок ещё не подключён, поэтому

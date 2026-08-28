@@ -1,14 +1,15 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { Check, Heart, Plus } from 'lucide-react';
 
 import { useRequest } from '@/components/order/request-store';
-import { formatPrice, formatRelative } from '@/lib/format';
+import { isStaticPreview, withBase } from '@/lib/build-mode';
+import { formatFreshness, formatPrice } from '@/lib/format';
 import { terms } from '@/lib/site';
 import type { CatalogProduct } from '@/lib/catalog/types';
 import { AvailabilityLabel } from './availability';
+import { AppLink } from '@/components/site/app-link';
 
 export function ProductCard({
   product,
@@ -37,14 +38,14 @@ export function ProductCard({
         />
       </button>
 
-      <Link
+      <AppLink
         href={`/product/${product.slug}`}
         className="block rounded-t-[15px] outline-none"
         aria-label={`Открыть ${product.title}`}
       >
         <div className="relative aspect-square overflow-hidden rounded-t-[15px] bg-surface">
           <Image
-            src={product.images[0]}
+            src={withBase(product.images[0])}
             alt={product.title}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
@@ -53,21 +54,21 @@ export function ProductCard({
             className="product-card__image object-contain p-6"
           />
         </div>
-      </Link>
+      </AppLink>
 
       <div className="flex flex-1 flex-col p-4 sm:p-5">
         {/* Wraps to two lines on narrow cards instead of breaking mid-label. */}
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
           <AvailabilityLabel availability={product.availability} className="whitespace-nowrap" />
           <span className="whitespace-nowrap text-[11px] text-ink-faint">
-            {formatRelative(product.updatedAt)}
+            {formatFreshness(product.updatedAt, isStaticPreview)}
           </span>
         </div>
 
         <h3 className="mt-3 text-[15px] font-medium leading-snug tracking-[-0.01em]">
-          <Link href={`/product/${product.slug}`} className="transition hover:text-accent">
+          <AppLink href={`/product/${product.slug}`} className="transition hover:text-accent">
             {product.title}
-          </Link>
+          </AppLink>
         </h3>
 
         <p className="mt-1.5 text-[13px] text-ink-soft">

@@ -10,7 +10,9 @@ import { Hero } from '@/components/home/hero';
 import { getPublicCatalog } from '@/lib/server/catalog-service';
 import { site } from '@/lib/site';
 
-export const dynamic = 'force-dynamic';
+// ISR: на Workers список обновляется раз в минуту, при статическом экспорте
+// страница просто собирается один раз.
+export const revalidate = 60;
 
 export default async function HomePage() {
   const { products } = await getPublicCatalog();

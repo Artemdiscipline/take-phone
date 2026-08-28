@@ -1,7 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   ChevronRight,
@@ -23,11 +21,13 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useRequest } from '@/components/order/request-store';
+import { isStaticPreview } from '@/lib/build-mode';
 import { site } from '@/lib/site';
 import { categories, mainNav } from './nav-data';
+import { AppLink, useNavigate } from '@/components/site/app-link';
 
 export function Header() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { items, open, lastAdded } = useRequest();
   const [query, setQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -47,7 +47,7 @@ export function Header() {
   const submitSearch = (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     const value = query.trim();
-    router.push(value ? `/catalog?q=${encodeURIComponent(value)}` : '/catalog');
+    navigate(value ? `/catalog?q=${encodeURIComponent(value)}` : '/catalog');
     setMenuOpen(false);
   };
 
@@ -73,21 +73,23 @@ export function Header() {
               <Phone className="size-3.5" aria-hidden />
               {site.phone}
             </a>
-            <Link className="flex items-center gap-1.5 transition hover:text-white" href="/staff">
-              <LockKeyhole className="size-3.5" aria-hidden />
-              Сотрудникам
-            </Link>
+            {!isStaticPreview && (
+              <AppLink className="flex items-center gap-1.5 transition hover:text-white" href="/staff">
+                <LockKeyhole className="size-3.5" aria-hidden />
+                Сотрудникам
+              </AppLink>
+            )}
           </div>
         </div>
       </div>
 
       <div className="shell flex h-[68px] items-center gap-4">
-        <Link href="/" className="shrink-0 leading-none" aria-label="Take Phone — на главную">
+        <AppLink href="/" className="shrink-0 leading-none" aria-label="Take Phone — на главную">
           <span className="block text-[17px] font-semibold tracking-[-0.03em]">TAKE PHONE</span>
           <span className="mt-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-ink-faint">
             Техника · {site.city}
           </span>
-        </Link>
+        </AppLink>
 
         <button
           type="button"
@@ -115,20 +117,20 @@ export function Header() {
 
         <nav className="hidden shrink-0 items-center gap-6 text-[13px] text-ink-soft xl:flex">
           {mainNav.slice(1).map((link) => (
-            <Link key={link.href} href={link.href} className="transition hover:text-accent">
+            <AppLink key={link.href} href={link.href} className="transition hover:text-accent">
               {link.label}
-            </Link>
+            </AppLink>
           ))}
         </nav>
 
         <div className="ml-auto flex items-center gap-2 md:ml-4">
-          <Link
+          <AppLink
             href="/catalog"
             className="grid size-11 place-items-center rounded-xl bg-surface text-ink-soft md:hidden"
             aria-label="Поиск по каталогу"
           >
             <Search className="size-4" aria-hidden />
-          </Link>
+          </AppLink>
 
           <button
             type="button"
@@ -162,7 +164,7 @@ export function Header() {
         <div className="collapse-open hidden border-t border-line bg-paper lg:block">
           <div className="shell grid grid-cols-4 gap-2 py-6">
             {categories.map((category) => (
-              <Link
+              <AppLink
                 key={category.id}
                 href={category.href}
                 onClick={() => setCatalogOpen(false)}
@@ -172,7 +174,7 @@ export function Header() {
               >
                 {category.label}
                 <span className="text-[11px] text-ink-faint">{category.note}</span>
-              </Link>
+              </AppLink>
             ))}
           </div>
         </div>
@@ -207,7 +209,7 @@ export function Header() {
 
             <nav className="grid divide-y divide-line text-sm">
               {mainNav.map((link) => (
-                <Link
+                <AppLink
                   key={link.href}
                   href={link.href}
                   onClick={() => setMenuOpen(false)}
@@ -215,16 +217,18 @@ export function Header() {
                 >
                   {link.label}
                   <ChevronRight className="size-4 text-ink-faint" aria-hidden />
-                </Link>
+                </AppLink>
               ))}
-              <Link
-                href="/staff"
-                onClick={() => setMenuOpen(false)}
-                className="flex h-14 items-center justify-between px-6 text-ink-soft"
-              >
-                Сотрудникам
-                <LockKeyhole className="size-4 text-ink-faint" aria-hidden />
-              </Link>
+              {!isStaticPreview && (
+                <AppLink
+                  href="/staff"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex h-14 items-center justify-between px-6 text-ink-soft"
+                >
+                  Сотрудникам
+                  <LockKeyhole className="size-4 text-ink-faint" aria-hidden />
+                </AppLink>
+              )}
             </nav>
 
             <div className="space-y-2 p-6 text-sm text-ink-soft">

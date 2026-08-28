@@ -1,16 +1,25 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { AppLink } from '@/components/site/app-link';
 
 import { ProductDetail } from '@/components/product/product-detail';
 import { AVAILABILITY_LABELS, colorRu } from '@/lib/catalog/normalize';
 import {
   getModelVariants,
   getProductBySlug,
+  getPublicCatalog,
   getRelatedProducts,
 } from '@/lib/server/catalog-service';
 
-export const dynamic = 'force-dynamic';
+// ISR: на Workers список обновляется раз в минуту, при статическом экспорте
+// страница просто собирается один раз.
+export const revalidate = 60;
+
+/** Список карточек для предгенерации — он же нужен статическому экспорту. */
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+  const { products } = await getPublicCatalog();
+  return products.map((product) => ({ slug: product.slug }));
+}
 
 export async function generateMetadata({
   params,
@@ -57,9 +66,9 @@ export default async function ProductPage({
   return (
     <div className="shell py-8 lg:py-12">
       <nav aria-label="Хлебные крошки" className="mb-7 text-[13px] text-ink-faint">
-        <Link href="/" className="transition hover:text-accent">Главная</Link>
+        <AppLink href="/" className="transition hover:text-accent">Главная</AppLink>
         <span className="mx-2">/</span>
-        <Link href="/catalog" className="transition hover:text-accent">Каталог iPhone</Link>
+        <AppLink href="/catalog" className="transition hover:text-accent">Каталог iPhone</AppLink>
         <span className="mx-2">/</span>
         <span className="text-ink-soft">{product.model}</span>
       </nav>

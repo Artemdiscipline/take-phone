@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { Clock3, MapPin, MessageCircle, Phone } from 'lucide-react';
+import { AppLink } from '@/components/site/app-link';
 
 import { site } from '@/lib/site';
 
@@ -15,7 +15,7 @@ export default function ContactsPage() {
   return (
     <div className="shell py-8 lg:py-12">
       <nav aria-label="Хлебные крошки" className="text-[13px] text-ink-faint">
-        <Link href="/" className="transition hover:text-accent">Главная</Link>
+        <AppLink href="/" className="transition hover:text-accent">Главная</AppLink>
         <span className="mx-2">/</span>
         <span className="text-ink-soft">Контакты</span>
       </nav>
@@ -55,12 +55,12 @@ export default function ContactsPage() {
             >
               Позвонить
             </a>
-            <Link
+            <AppLink
               href="/catalog"
               className="inline-flex h-12 items-center justify-center rounded-xl border border-line px-6 text-sm font-medium transition hover:border-line-strong"
             >
               Открыть каталог
-            </Link>
+            </AppLink>
           </div>
         </div>
 

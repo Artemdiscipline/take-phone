@@ -10,9 +10,10 @@ import {
   X,
 } from 'lucide-react';
 
+import { isStaticPreview } from '@/lib/build-mode';
 import { colorRu } from '@/lib/catalog/normalize';
 import type { CatalogProduct } from '@/lib/catalog/types';
-import { formatRelative } from '@/lib/format';
+import { formatFreshness } from '@/lib/format';
 import { ProductCard } from './product-card';
 import { ProductGridSkeleton } from './product-skeleton';
 
@@ -217,19 +218,22 @@ export function CatalogBrowser({
             ? `${visible.length} ${plural(visible.length, 'позиция', 'позиции', 'позиций')}`
             : 'Ничего не найдено'}
           {lastUpdate && (
-            <span className="text-ink-faint"> · обновлено {formatRelative(lastUpdate)}</span>
+            <span className="text-ink-faint"> · обновлено {formatFreshness(lastUpdate, isStaticPreview)}</span>
           )}
         </p>
 
-        <button
-          type="button"
-          onClick={refresh}
-          disabled={status === 'loading'}
-          className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] text-ink-soft transition hover:bg-surface disabled:opacity-60"
-        >
-          <RefreshCw className={`size-3.5 ${status === 'loading' ? 'spin' : ''}`} aria-hidden />
-          {status === 'loading' ? 'Обновляем…' : 'Обновить цены'}
-        </button>
+        {/* В статической витрине обновлять нечего — серверного маршрута нет. */}
+        {!isStaticPreview && (
+          <button
+            type="button"
+            onClick={refresh}
+            disabled={status === 'loading'}
+            className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] text-ink-soft transition hover:bg-surface disabled:opacity-60"
+          >
+            <RefreshCw className={`size-3.5 ${status === 'loading' ? 'spin' : ''}`} aria-hidden />
+            {status === 'loading' ? 'Обновляем…' : 'Обновить цены'}
+          </button>
+        )}
       </div>
 
       {status === 'error' && (

@@ -1,6 +1,7 @@
-import Link from 'next/link';
+import { isStaticPreview } from '@/lib/build-mode';
 import { site } from '@/lib/site';
 import { categories, mainNav } from './nav-data';
+import { AppLink } from '@/components/site/app-link';
 
 export function Footer() {
   return (
@@ -19,12 +20,12 @@ export function Footer() {
           <ul className="mt-4 space-y-2.5 text-sm">
             {categories.slice(0, 5).map((category) => (
               <li key={category.id}>
-                <Link
+                <AppLink
                   href={category.href}
                   className={category.ready ? 'transition hover:text-accent' : 'text-ink-faint'}
                 >
                   {category.label}
-                </Link>
+                </AppLink>
               </li>
             ))}
           </ul>
@@ -35,16 +36,18 @@ export function Footer() {
           <ul className="mt-4 space-y-2.5 text-sm">
             {mainNav.slice(1).map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className="transition hover:text-accent">
+                <AppLink href={link.href} className="transition hover:text-accent">
                   {link.label}
-                </Link>
+                </AppLink>
               </li>
             ))}
-            <li>
-              <Link href="/staff" className="text-ink-faint transition hover:text-accent">
-                Сотрудникам
-              </Link>
-            </li>
+            {!isStaticPreview && (
+              <li>
+                <AppLink href="/staff" className="text-ink-faint transition hover:text-accent">
+                  Сотрудникам
+                </AppLink>
+              </li>
+            )}
           </ul>
         </nav>
 

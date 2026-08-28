@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import { AppLink } from '@/components/site/app-link';
 
 import { CatalogBrowser } from '@/components/catalog/catalog-browser';
 import { getPublicCatalog } from '@/lib/server/catalog-service';
 
-export const dynamic = 'force-dynamic';
+// ISR: на Workers список обновляется раз в минуту, при статическом экспорте
+// страница просто собирается один раз.
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: 'Каталог iPhone в Тюмени',
@@ -26,7 +28,7 @@ export default async function CatalogPage({
   return (
     <div className="shell py-8 lg:py-12">
       <nav aria-label="Хлебные крошки" className="text-[13px] text-ink-faint">
-        <Link href="/" className="transition hover:text-accent">Главная</Link>
+        <AppLink href="/" className="transition hover:text-accent">Главная</AppLink>
         <span className="mx-2">/</span>
         <span className="text-ink-soft">Каталог iPhone</span>
       </nav>
