@@ -6,12 +6,12 @@ const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin', 'cyr
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin', 'cyrillic'] });
 
 export const metadata: Metadata = {
-  title: 'Take Phone — магазин техники в Тюмени',
-  description: 'Демо-концепция интернет-магазина Take Phone: актуальные цены, наличие и оформление заявки.',
+  title: 'Take Phone — техника без лишнего',
+  description: 'Премиальный каталог техники Take Phone в Тюмени: актуальные цены, наличие и оформление заявки.',
   openGraph: {
-    title: 'Take Phone — техника в Тюмени',
-    description: 'Каталог техники с актуальными ценами и наличием.',
-    images: ['/take-phone-hero.png'],
+    title: 'Take Phone — техника без лишнего',
+    description: 'Премиальный каталог техники в Тюмени.',
+    images: ['/take-phone-luxury.png'],
   },
 };
 
