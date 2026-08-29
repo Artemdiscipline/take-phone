@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useMemo, useState } from 'react';
 import { ExternalLink, Minus, Plus, Search, X } from 'lucide-react';
 
+import { withBase } from '@/lib/build-mode';
 import { AVAILABILITY_LABELS } from '@/lib/catalog/normalize';
 import { modelKey } from '@/lib/catalog/pricing';
 import type { MarkupRules, StaffProductView } from '@/lib/catalog/types';
@@ -138,7 +139,7 @@ function ProductRow({
         className="flex w-full items-center gap-4 p-4 text-left"
       >
         <div className="relative size-14 shrink-0 overflow-hidden rounded-lg bg-surface">
-          <Image src={product.images[0]} alt="" fill sizes="56px" className="object-contain p-1.5" />
+          <Image src={withBase(product.images[0])} alt="" fill sizes="56px" className="object-contain p-1.5" />
         </div>
 
         <div className="min-w-0 flex-1">

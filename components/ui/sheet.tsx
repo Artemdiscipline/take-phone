@@ -41,15 +41,26 @@ function SheetContent({
   children,
   side = 'right',
   showCloseButton = true,
+  initialFocus,
   ...props
 }: SheetPrimitive.Popup.Props & {
   side?: 'top' | 'right' | 'bottom' | 'left';
   showCloseButton?: boolean;
 }) {
+  /**
+   * По умолчанию фокус уходит на первый интерактивный элемент внутри панели.
+   * Если это поле ввода — на телефоне сразу выезжает клавиатура и закрывает
+   * половину экрана. Фокусируем саму панель: клавиатура не появляется, а
+   * навигация с клавиатуры остаётся внутри диалога.
+   */
+  const popupRef = React.useRef<HTMLDivElement>(null);
+
   return (
     <SheetPortal>
       <SheetOverlay />
       <SheetPrimitive.Popup
+        ref={popupRef}
+        initialFocus={initialFocus ?? popupRef}
         data-slot="sheet-content"
         data-side={side}
         className={cn(

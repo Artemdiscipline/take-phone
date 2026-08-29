@@ -2,12 +2,14 @@ const rubles = new Intl.NumberFormat('ru-RU', {
   maximumFractionDigits: 0,
 });
 
+/**
+ * Цена с неразрывным пробелом перед знаком рубля.
+ *
+ * С обычным пробелом «₽» отрывается от суммы и уезжает на следующую строку —
+ * в узких карточках это происходило постоянно.
+ */
 export function formatPrice(value: number): string {
-  return `${rubles.format(Math.round(value))} ₽`;
-}
-
-export function formatCompactPrice(value: number): string {
-  return rubles.format(Math.round(value));
+  return `${rubles.format(Math.round(value))} ₽`;
 }
 
 const timeFormatter = new Intl.DateTimeFormat('ru-RU', {

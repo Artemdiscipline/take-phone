@@ -17,8 +17,15 @@ export const isStaticPreview = process.env.NEXT_PUBLIC_STATIC_PREVIEW === '1';
  */
 export const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 
-/** Добавляет префикс подпапки к внутреннему пути. */
+/**
+ * Добавляет префикс подпапки к внутреннему пути.
+ *
+ * Идемпотентна: путь, уже начинающийся с префикса, возвращается как есть —
+ * иначе значение, сохранённое в localStorage и прогнанное через функцию
+ * повторно, превратилось бы в `/take-phone/take-phone/...`.
+ */
 export function withBase(path: string): string {
   if (!basePath || !path.startsWith('/')) return path;
+  if (path === basePath || path.startsWith(`${basePath}/`)) return path;
   return path === '/' ? `${basePath}/` : `${basePath}${path}`;
 }

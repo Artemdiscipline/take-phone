@@ -24,7 +24,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { AppLink } from '@/components/site/app-link';
-import { isStaticPreview } from '@/lib/build-mode';
+import { isStaticPreview, withBase } from '@/lib/build-mode';
 import { colorRu } from '@/lib/catalog/normalize';
 import { applyCardFee, cardFeeAmount } from '@/lib/catalog/pricing';
 import { formatPrice } from '@/lib/format';
@@ -186,7 +186,7 @@ export function RequestDrawer() {
                         className="flex items-center gap-3 rounded-xl border border-line p-2.5"
                       >
                         <div className="relative size-16 shrink-0 overflow-hidden rounded-lg bg-surface">
-                          <Image src={item.image} alt="" fill sizes="64px" className="object-contain p-1.5" />
+                          <Image src={withBase(item.image)} alt="" fill sizes="64px" className="object-contain p-1.5" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <AppLink
