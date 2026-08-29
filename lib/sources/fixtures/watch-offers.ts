@@ -29,116 +29,116 @@ interface WatchSku {
 }
 
 const SKUS: WatchSku[] = [
-  /* ------------------------------------------------------- Apple Watch Ultra 3 */
+  /* ------------------------------------------------------- Apple Watch Ultra 2 */
   {
-    key: 'ultra3-49-natural-ocean', model: 'Apple Watch Ultra 3', caseSize: 49,
+    key: 'ultra2-49-natural-ocean', model: 'Apple Watch Ultra 2', caseSize: 49,
     color: 'Natural Titanium', band: 'Ocean Band', connectivity: 'cellular',
     basePrice: 79_990, reference: 89_990,
     lines: { 'first-apple': { delta: 0, state: 'in' }, 'ice-apple': { delta: 1_200, state: 'in' }, phone24: { delta: 900, state: 'in' } },
   },
   {
-    key: 'ultra3-49-natural-alpine', model: 'Apple Watch Ultra 3', caseSize: 49,
+    key: 'ultra2-49-natural-alpine', model: 'Apple Watch Ultra 2', caseSize: 49,
     color: 'Natural Titanium', band: 'Alpine Loop', connectivity: 'cellular',
     basePrice: 81_490,
     lines: { 'first-apple': { delta: 0, state: 'in' }, phone24: { delta: 1_100, state: 'order' } },
   },
   {
-    key: 'ultra3-49-natural-trail', model: 'Apple Watch Ultra 3', caseSize: 49,
+    key: 'ultra2-49-natural-trail', model: 'Apple Watch Ultra 2', caseSize: 49,
     color: 'Natural Titanium', band: 'Trail Loop', connectivity: 'cellular',
     basePrice: 80_990,
     lines: { 'ice-apple': { delta: 0, state: 'in' }, phone24: { delta: 1_400, state: 'out' } },
   },
   {
-    key: 'ultra3-49-black-ocean', model: 'Apple Watch Ultra 3', caseSize: 49,
+    key: 'ultra2-49-black-ocean', model: 'Apple Watch Ultra 2', caseSize: 49,
     color: 'Black Titanium', band: 'Ocean Band', connectivity: 'cellular',
     basePrice: 82_490, reference: 92_990,
     lines: { 'first-apple': { delta: 700, state: 'in' }, 'ice-apple': { delta: 0, state: 'in' } },
   },
   {
-    key: 'ultra3-49-black-alpine', model: 'Apple Watch Ultra 3', caseSize: 49,
+    key: 'ultra2-49-black-alpine', model: 'Apple Watch Ultra 2', caseSize: 49,
     color: 'Black Titanium', band: 'Alpine Loop', connectivity: 'cellular',
     basePrice: 83_990,
     lines: { 'ice-apple': { delta: 0, state: 'order' }, phone24: { delta: 600, state: 'order' } },
   },
 
-  /* ---------------------------------------------------- Apple Watch Series 11 */
+  /* ---------------------------------------------------- Apple Watch Series 10 */
   {
-    key: 's11-46-jetblack-sportband', model: 'Apple Watch Series 11', caseSize: 46,
+    key: 's10-46-jetblack-sportband', model: 'Apple Watch Series 10', caseSize: 46,
     color: 'Jet Black', band: 'Sport Band', connectivity: 'gps',
     basePrice: 44_990, reference: 49_990,
     lines: { 'first-apple': { delta: 0, state: 'in' }, 'ice-apple': { delta: 800, state: 'in' }, phone24: { delta: 500, state: 'in' } },
   },
   {
-    key: 's11-46-jetblack-sportband-cell', model: 'Apple Watch Series 11', caseSize: 46,
+    key: 's10-46-jetblack-sportband-cell', model: 'Apple Watch Series 10', caseSize: 46,
     color: 'Jet Black', band: 'Sport Band', connectivity: 'cellular',
     basePrice: 52_990,
     lines: { 'ice-apple': { delta: 0, state: 'in' }, phone24: { delta: 1_100, state: 'order' } },
   },
   {
-    key: 's11-46-silver-milanese', model: 'Apple Watch Series 11', caseSize: 46,
+    key: 's10-46-silver-milanese', model: 'Apple Watch Series 10', caseSize: 46,
     color: 'Silver', band: 'Milanese Loop', connectivity: 'cellular',
     basePrice: 61_490,
     lines: { 'first-apple': { delta: 0, state: 'in' }, 'ice-apple': { delta: 1_500, state: 'in' } },
   },
   {
-    key: 's11-42-jetblack-sportloop', model: 'Apple Watch Series 11', caseSize: 42,
+    key: 's10-42-jetblack-sportloop', model: 'Apple Watch Series 10', caseSize: 42,
     color: 'Jet Black', band: 'Sport Loop', connectivity: 'gps',
     basePrice: 41_990,
     lines: { 'first-apple': { delta: 400, state: 'in' }, phone24: { delta: 0, state: 'in' } },
   },
   {
-    key: 's11-42-rosegold-sportband', model: 'Apple Watch Series 11', caseSize: 42,
+    key: 's10-42-rosegold-sportband', model: 'Apple Watch Series 10', caseSize: 42,
     color: 'Rose Gold', band: 'Sport Band', connectivity: 'gps',
     basePrice: 42_490,
     lines: { 'ice-apple': { delta: 0, state: 'in' }, 'first-apple': { delta: 900, state: 'out' } },
   },
   {
-    key: 's11-42-silver-sportloop', model: 'Apple Watch Series 11', caseSize: 42,
+    key: 's10-42-silver-sportloop', model: 'Apple Watch Series 10', caseSize: 42,
     color: 'Silver', band: 'Sport Loop', connectivity: 'gps',
     basePrice: 41_490,
     lines: { phone24: { delta: 0, state: 'in' }, 'ice-apple': { delta: 700, state: 'in' } },
   },
 
-  /* -------------------------------------------------------- Apple Watch SE 3 */
+  /* -------------------------------------------------------- Apple Watch SE 2 */
   {
-    key: 'se3-44-midnight-sportband', model: 'Apple Watch SE 3', caseSize: 44,
+    key: 'se2-44-midnight-sportband', model: 'Apple Watch SE 2', caseSize: 44,
     color: 'Midnight', band: 'Sport Band', connectivity: 'gps',
     basePrice: 26_990, reference: 29_990,
     lines: { 'first-apple': { delta: 0, state: 'in' }, 'ice-apple': { delta: 600, state: 'in' }, phone24: { delta: 300, state: 'in' } },
   },
   {
-    key: 'se3-44-midnight-sportloop', model: 'Apple Watch SE 3', caseSize: 44,
+    key: 'se2-44-midnight-sportloop', model: 'Apple Watch SE 2', caseSize: 44,
     color: 'Midnight', band: 'Sport Loop', connectivity: 'gps',
     basePrice: 27_490,
     lines: { 'ice-apple': { delta: 0, state: 'in' }, phone24: { delta: 500, state: 'in' } },
   },
   {
-    key: 'se3-44-starlight-sportband', model: 'Apple Watch SE 3', caseSize: 44,
+    key: 'se2-44-starlight-sportband', model: 'Apple Watch SE 2', caseSize: 44,
     color: 'Starlight', band: 'Sport Band', connectivity: 'gps',
     basePrice: 26_990,
     lines: { 'first-apple': { delta: 0, state: 'in' }, phone24: { delta: 800, state: 'out' } },
   },
   {
-    key: 'se3-44-midnight-sportband-cell', model: 'Apple Watch SE 3', caseSize: 44,
+    key: 'se2-44-midnight-sportband-cell', model: 'Apple Watch SE 2', caseSize: 44,
     color: 'Midnight', band: 'Sport Band', connectivity: 'cellular',
     basePrice: 33_490,
     lines: { 'ice-apple': { delta: 0, state: 'order' }, 'first-apple': { delta: 900, state: 'order' } },
   },
   {
-    key: 'se3-40-starlight-sportband', model: 'Apple Watch SE 3', caseSize: 40,
+    key: 'se2-40-starlight-sportband', model: 'Apple Watch SE 2', caseSize: 40,
     color: 'Starlight', band: 'Sport Band', connectivity: 'gps',
     basePrice: 23_990, reference: 26_490,
     lines: { 'first-apple': { delta: 0, state: 'in' }, 'ice-apple': { delta: 400, state: 'in' } },
   },
   {
-    key: 'se3-40-midnight-sportloop', model: 'Apple Watch SE 3', caseSize: 40,
+    key: 'se2-40-midnight-sportloop', model: 'Apple Watch SE 2', caseSize: 40,
     color: 'Midnight', band: 'Sport Loop', connectivity: 'gps',
     basePrice: 24_490,
     lines: { phone24: { delta: 0, state: 'in' }, 'first-apple': { delta: 700, state: 'in' } },
   },
   {
     // Раскуплены везде — состояние «нет в наличии» тоже должно быть представлено.
-    key: 'se3-40-starlight-sportloop', model: 'Apple Watch SE 3', caseSize: 40,
+    key: 'se2-40-starlight-sportloop', model: 'Apple Watch SE 2', caseSize: 40,
     color: 'Starlight', band: 'Sport Loop', connectivity: 'gps',
     basePrice: 24_490,
     lines: { 'ice-apple': { delta: 0, state: 'out' }, phone24: { delta: 500, state: 'out' } },

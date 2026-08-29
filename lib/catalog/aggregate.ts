@@ -1,5 +1,5 @@
 import { CATEGORY_ORDER, categorySlug as toCategorySlug, modelHref } from './categories';
-import { resolveModelImage, resolveProductImage } from './images';
+import { CATEGORY_IMAGES, resolveModelImage, resolveProductImage } from './images';
 import {
   buildModelSlug,
   buildSlug,
@@ -143,6 +143,12 @@ function buildTitle(offer: SourceOffer, colorLabel: string | undefined): string 
     return `${parts[0]} ${parts[1]}, ${parts.slice(2).join(', ')}`;
   }
 
+  if (offer.category === 'mac') {
+    return [offer.model, formatMemory(offer.memory), offer.configuration, color]
+      .filter(Boolean)
+      .join(', ');
+  }
+
   return `${offer.model} ${formatMemory(offer.memory)}, ${color}`;
 }
 
@@ -150,6 +156,8 @@ function resolveImages(offer: SourceOffer): string[] {
   const local = resolveProductImage(offer.model, offer.color);
   if (local) return [local];
   if (offer.images.length > 0) return offer.images;
+  const categoryImage = CATEGORY_IMAGES[offer.category];
+  if (categoryImage) return [categoryImage];
   return [PLACEHOLDER_IMAGE];
 }
 
@@ -450,5 +458,6 @@ function buildOptionSummary(group: CatalogListing[]): string {
   const memories = [...new Set(group.map((listing) => listing.memory).filter(Boolean))]
     .sort((a, b) => a - b);
 
-  return memories.map((memory) => formatMemory(memory)).join(' · ');
+  const summary = memories.map((memory) => formatMemory(memory)).join(' · ');
+  return group[0]?.category === 'mac' && summary ? `SSD ${summary}` : summary;
 }

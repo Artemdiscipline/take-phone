@@ -357,6 +357,27 @@ export function parseWatchModel(title: string): { model: string; generation: str
 }
 
 /**
+ * Разбирает строки Mac из общего прайс-листа поставщика.
+ *
+ * Размер и чип входят в имя модели, чтобы «Air 13 M4» и «Air 15 M4» были
+ * отдельными модельными плашками, а объём SSD и ОЗУ оставались вариантами.
+ */
+export function parseMacModel(title: string): { model: string; generation: string } | null {
+  const match = title.match(
+    /macbook\s+(air|pro)\s*(13|14|15|16)(?:["″']|\s*(?:inch|дюйм(?:а|ов)?))?\s*(m\d)(?:\s*(pro|max))?/i,
+  );
+  if (!match) return null;
+
+  const family = titleCase(match[1].toLowerCase());
+  const chip = `${match[3].toUpperCase()}${match[4] ? ` ${titleCase(match[4].toLowerCase())}` : ''}`;
+
+  return {
+    model: `MacBook ${family} ${match[2]} ${chip}`,
+    generation: family,
+  };
+}
+
+/**
  * Определяет категорию и модель по названию из прайс-листа.
  *
  * Источники присылают один общий список, поэтому категория выводится из
@@ -366,6 +387,9 @@ export function parseWatchModel(title: string): { model: string; generation: str
 export function parseDeviceModel(
   title: string,
 ): { model: string; generation: string; category: CategoryId } | null {
+  const mac = parseMacModel(title);
+  if (mac) return { ...mac, category: 'mac' };
+
   const watch = parseWatchModel(title);
   if (watch) return { ...watch, category: 'watch' };
 

@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react';
 
+import { CashPriceNote } from '@/components/catalog/cash-price-note';
 import {
   Sheet,
   SheetContent,
@@ -186,7 +187,14 @@ export function RequestDrawer() {
                         className="flex items-center gap-3 rounded-xl border border-line p-2.5"
                       >
                         <div className="relative size-16 shrink-0 overflow-hidden rounded-lg bg-surface">
-                          <Image src={withBase(item.image)} alt="" fill sizes="64px" className="object-contain p-1.5" />
+                          <Image
+                            src={withBase(item.image)}
+                            alt=""
+                            fill
+                            sizes="64px"
+                            style={{ objectFit: 'contain' }}
+                            className="object-contain p-1.5"
+                          />
                         </div>
                         <div className="min-w-0 flex-1">
                           <AppLink
@@ -199,6 +207,7 @@ export function RequestDrawer() {
                           <p className="mt-0.5 text-[12px] text-ink-faint">
                             {item.memoryLabel} · {colorRu(item.color) ?? item.color} · {item.simLabel}
                           </p>
+                          <CashPriceNote className="mt-2" />
                           <p className="mt-1 text-sm font-semibold">{formatPrice(item.price)}</p>
                         </div>
                         <button
@@ -341,6 +350,7 @@ export function RequestDrawer() {
                 </div>
 
                 <div className="border-t border-line bg-surface p-6">
+                  <CashPriceNote className="mb-3" />
                   <div className="flex items-end justify-between gap-4">
                     <span className="text-sm text-ink-soft">Итого ориентировочно</span>
                     <strong className="text-2xl font-semibold tracking-[-0.03em]">

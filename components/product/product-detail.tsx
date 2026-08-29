@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 import { AvailabilityChip } from '@/components/catalog/availability';
+import { CashPriceNote } from '@/components/catalog/cash-price-note';
 import { ProductCard } from '@/components/catalog/product-card';
 import { useRequest } from '@/components/order/request-store';
 import { AppLink, useNavigate } from '@/components/site/app-link';
@@ -66,7 +67,8 @@ export function ProductDetail({
               fill
               sizes="(max-width: 1024px) 100vw, 620px"
               priority
-              className="object-contain p-8 sm:p-12"
+              style={{ objectFit: 'contain' }}
+              className="object-contain p-3 sm:p-5"
             />
           </div>
 
@@ -83,7 +85,14 @@ export function ProductDetail({
                       index === activeImage ? 'border-accent' : 'border-line hover:border-line-strong'
                     }`}
                   >
-                    <Image src={withBase(image)} alt="" fill sizes="68px" className="object-contain p-2" />
+                    <Image
+                      src={withBase(image)}
+                      alt=""
+                      fill
+                      sizes="68px"
+                      style={{ objectFit: 'contain' }}
+                      className="object-contain p-2"
+                    />
                   </button>
                 </li>
               ))}
@@ -101,10 +110,14 @@ export function ProductDetail({
 
           <h1 className="h2 mt-4">{listing.model}</h1>
           <p className="mt-2 text-sm text-ink-soft">
-            {listing.memoryLabel} · {colorRu(listing.color) ?? listing.color} · {variant.simLabel}
+            {listing.memoryLabel} · {colorRu(listing.color) ?? listing.color}
+            {listing.category === 'mac'
+              ? listing.configuration ? ` · ${listing.configuration}` : ''
+              : ` · ${variant.simLabel}`}
           </p>
 
-          <div className="mt-7 flex flex-wrap items-end gap-3">
+          <CashPriceNote className="mt-7" />
+          <div className="mt-3 flex flex-wrap items-end gap-3">
             <span className="text-[32px] font-semibold leading-none tracking-[-0.035em]">
               {formatPrice(variant.price)}
             </span>
@@ -189,7 +202,7 @@ export function ProductDetail({
             Раньше версии eSIM и 2 SIM были двумя карточками каталога с общим
             адресом. Теперь это выбор внутри товара: меняются цена и наличие.
           */}
-          {listing.hasSimChoice && (
+          {listing.category !== 'mac' && listing.hasSimChoice && (
             <section className="mt-6">
               <p className="field-label">SIM-карты</p>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -310,6 +323,7 @@ function SimOption({
         <span className="text-sm font-medium">{variant.simLabel}</span>
         {active && <Check className="size-4 shrink-0 text-accent" aria-hidden />}
       </span>
+      <CashPriceNote className="mt-2" />
       <span className="mt-1.5 block text-[13px] font-semibold">{formatPrice(variant.price)}</span>
       <span
         className={`mt-0.5 block text-[11px] ${

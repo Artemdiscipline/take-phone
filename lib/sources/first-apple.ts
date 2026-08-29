@@ -2,6 +2,7 @@ import type { RawOffer } from '@/lib/catalog/types';
 import { BaseSourceAdapter } from './adapter';
 import { buildFixtureOffers } from './fixtures/iphone-offers';
 import { buildWatchFixtureOffers } from './fixtures/watch-offers';
+import { buildMacFixtureOffers } from './fixtures/mac-offers';
 
 /**
  * 1C-Bitrix storefront. Availability is published as Russian text and memory
@@ -13,6 +14,10 @@ export class FirstAppleAdapter extends BaseSourceAdapter {
   readonly siteUrl = 'https://first-apple72.ru/';
 
   protected async loadFixtures(): Promise<RawOffer[]> {
-    return [...buildFixtureOffers(this.id), ...buildWatchFixtureOffers(this.id)];
+    return [
+      ...buildFixtureOffers(this.id),
+      ...buildWatchFixtureOffers(this.id),
+      ...buildMacFixtureOffers(this.id),
+    ];
   }
 }

@@ -164,17 +164,17 @@ const SKUS: FixtureSku[] = [
     было видно, как новая модель из прайс-листа сама встаёт в правильное место.
   */
   {
-    key: '17e-128-black', model: 'iPhone 17e', memory: 128, color: 'Black', sim: 'esim',
+    key: '16e-128-black', model: 'iPhone 16e', memory: 128, color: 'Black', sim: 'esim',
     basePrice: 54_990, reference: 59_990,
     lines: { 'first-apple': { delta: 0, state: 'in' }, 'ice-apple': { delta: 600, state: 'in' }, phone24: { delta: 400, state: 'in' } },
   },
   {
-    key: '17e-128-white', model: 'iPhone 17e', memory: 128, color: 'White', sim: 'esim',
+    key: '16e-128-white', model: 'iPhone 16e', memory: 128, color: 'White', sim: 'esim',
     basePrice: 54_990,
     lines: { 'ice-apple': { delta: 0, state: 'in' }, phone24: { delta: 700, state: 'in' } },
   },
   {
-    key: '17e-256-black', model: 'iPhone 17e', memory: 256, color: 'Black', sim: 'esim',
+    key: '16e-256-black', model: 'iPhone 16e', memory: 256, color: 'Black', sim: 'esim',
     basePrice: 62_490,
     lines: { 'first-apple': { delta: 0, state: 'in' }, 'ice-apple': { delta: 900, state: 'order' } },
   },
@@ -270,6 +270,12 @@ const COLOR_RU_FIXTURE: Record<string, string> = {
   'Cloud White': 'белое облако',
   'Light Gold': 'светлое золото',
   'Space Black': 'космический чёрный',
+  'Black Titanium': 'чёрный титан',
+  'Natural Titanium': 'натуральный титан',
+  'Desert Titanium': 'песчаный титан',
+  Ultramarine: 'ультрамарин',
+  Teal: 'бирюзовый',
+  Pink: 'розовый',
 };
 
 function memoryLabel(memory: number): string {

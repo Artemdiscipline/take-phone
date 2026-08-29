@@ -10,6 +10,7 @@ import type { CatalogListing, CatalogProduct } from '@/lib/catalog/types';
 import { formatFreshness, formatPrice } from '@/lib/format';
 import { terms } from '@/lib/site';
 import { AvailabilityLabel } from './availability';
+import { CashPriceNote } from './cash-price-note';
 
 export function ProductCard({
   listing,
@@ -72,7 +73,8 @@ export function ProductCard({
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
             priority={priority}
             loading={priority ? undefined : 'lazy'}
-            className="product-card__image object-contain p-6"
+            style={{ objectFit: 'contain' }}
+            className="product-card__image object-contain p-2 sm:p-3"
           />
         </div>
       </AppLink>
@@ -97,7 +99,9 @@ export function ProductCard({
 
         <p className="mt-1.5 text-[13px] text-ink-soft">
           {listing.caseSizeLabel ?? listing.memoryLabel}
-          {hasSimChoice ? ' · eSIM или 2 SIM' : ` · ${variant.simLabel}`}
+          {listing.category === 'mac'
+            ? listing.configuration ? ` · ${listing.configuration}` : ''
+            : hasSimChoice ? ' · eSIM или 2 SIM' : ` · ${variant.simLabel}`}
         </p>
 
         {availability === 'to_order' && (
@@ -108,6 +112,7 @@ export function ProductCard({
 
         <div className="mt-auto flex items-end justify-between gap-3 pt-5">
           <div className="min-w-0">
+            <CashPriceNote className="mb-2" />
             {oldPrice && (
               <p className="text-[12px] text-ink-faint line-through">
                 {formatPrice(oldPrice)}

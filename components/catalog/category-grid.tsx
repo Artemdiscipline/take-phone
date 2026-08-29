@@ -65,6 +65,7 @@ function CategoryTile({ id, ready }: { id: CategoryId; ready: boolean }) {
               fill
               sizes="(max-width: 640px) 45vw, 260px"
               loading="lazy"
+              style={{ objectFit: 'contain' }}
               className={`object-contain transition duration-500 ${
                 ready ? 'group-hover:scale-105' : 'opacity-45 saturate-0'
               }`}

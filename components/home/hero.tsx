@@ -8,6 +8,7 @@ import { formatPrice } from '@/lib/format';
 import { site } from '@/lib/site';
 import { AppLink } from '@/components/site/app-link';
 import { withBase } from '@/lib/build-mode';
+import { CashPriceNote } from '@/components/catalog/cash-price-note';
 
 /**
  * First screen. The price and availability shown here come from the same
@@ -33,14 +34,17 @@ export function Hero({ featured }: { featured: CatalogListing | null }) {
           </p>
 
           {featured && (
-            <div className="mt-7 flex flex-wrap items-end gap-x-5 gap-y-2">
-              <span className="text-[28px] font-semibold leading-none tracking-[-0.035em]">
-                от {formatPrice(featured.price)}
-              </span>
-              <AvailabilityLabel availability={featured.availability} className="pb-1" />
-              <span className="pb-1 text-[12px] text-ink-faint">
-                {featured.memoryLabel}
-              </span>
+            <div className="mt-7">
+              <CashPriceNote className="mb-3" />
+              <div className="flex flex-wrap items-end gap-x-5 gap-y-2">
+                <span className="text-[28px] font-semibold leading-none tracking-[-0.035em]">
+                  от {formatPrice(featured.price)}
+                </span>
+                <AvailabilityLabel availability={featured.availability} className="pb-1" />
+                <span className="pb-1 text-[12px] text-ink-faint">
+                  {featured.memoryLabel}
+                </span>
+              </div>
             </div>
           )}
 

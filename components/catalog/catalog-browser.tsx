@@ -444,6 +444,7 @@ interface Facet {
  * а у телефонов — размер корпуса.
  */
 function buildFacets(entries: Entry[]): Facet[] {
+  const category = entries[0]?.listing.category;
   const models = uniqueBy(
     entries.map((entry) => ({ value: entry.listing.modelSlug, label: entry.listing.modelName })),
   );
@@ -486,10 +487,12 @@ function buildFacets(entries: Entry[]): Facet[] {
 
   const sims = uniqueBy(
     entries.flatMap((entry) =>
-      (entry.asVariant ? [entry.variant] : entry.listing.variants).map((variant) => ({
-        value: variant.sim,
-        label: variant.simLabel,
-      }))),
+      (entry.asVariant ? [entry.variant] : entry.listing.variants)
+        .filter((variant) => variant.sim !== 'unknown')
+        .map((variant) => ({
+          value: variant.sim,
+          label: variant.simLabel,
+        }))),
   );
 
   // «Тип SIM» у часов означает сотовый модуль — подпись подстраивается.
@@ -497,10 +500,15 @@ function buildFacets(entries: Entry[]): Facet[] {
 
   const all: Facet[] = [
     { id: 'model', label: 'Модель', anyLabel: 'Все модели', options: models },
-    { id: 'memory', label: 'Память', anyLabel: 'Любая', options: memories },
+    { id: 'memory', label: category === 'mac' ? 'SSD' : 'Память', anyLabel: 'Любой', options: memories },
     { id: 'caseSize', label: 'Корпус', anyLabel: 'Любой', options: caseSizes },
     { id: 'color', label: 'Цвет', anyLabel: 'Любой', options: colors },
-    { id: 'configuration', label: 'Ремешок', anyLabel: 'Любой', options: configurations },
+    {
+      id: 'configuration',
+      label: category === 'mac' ? 'Оперативная память' : 'Ремешок',
+      anyLabel: 'Любая',
+      options: configurations,
+    },
     { id: 'sim', label: simLabel, anyLabel: 'Любой', options: sims },
   ];
 

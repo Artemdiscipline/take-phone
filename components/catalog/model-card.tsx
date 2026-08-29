@@ -5,6 +5,7 @@ import { AppLink } from '@/components/site/app-link';
 import { withBase } from '@/lib/build-mode';
 import type { CatalogModelGroup } from '@/lib/catalog/types';
 import { formatPrice } from '@/lib/format';
+import { CashPriceNote } from './cash-price-note';
 
 /**
  * Модельная плашка каталога.
@@ -39,7 +40,8 @@ export function ModelCard({
           sizes="(max-width: 420px) 92vw, (max-width: 1024px) 46vw, 300px"
           priority={priority}
           loading={priority ? undefined : 'lazy'}
-          className={`model-card__image object-contain p-6 sm:p-8 ${soldOut ? 'opacity-60 saturate-50' : ''}`}
+          style={{ objectFit: 'contain' }}
+          className={`model-card__image object-contain p-2 sm:p-3 ${soldOut ? 'opacity-60 saturate-50' : ''}`}
         />
       </div>
 
@@ -54,6 +56,7 @@ export function ModelCard({
 
         <div className="mt-auto flex items-end justify-between gap-3 pt-6">
           <div className="min-w-0">
+            {model.price !== null && <CashPriceNote className="mb-2" />}
             {model.price === null
               ? <p className="text-[15px] font-medium text-ink-faint">Нет в наличии</p>
               : (

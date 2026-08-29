@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { aggregateOffers, buildListings, toPublicProducts } from '@/lib/catalog/aggregate';
-import { buildMatchKey, buildSlug, canonicalColor } from '@/lib/catalog/normalize';
+import { buildMatchKey, buildSlug, canonicalColor, parseMacModel } from '@/lib/catalog/normalize';
 import { defaultMarkupRules } from '@/lib/catalog/pricing';
 import type { SourceOffer } from '@/lib/catalog/types';
 import { buildFixtureOffers } from '@/lib/sources/fixtures/iphone-offers';
@@ -72,6 +72,22 @@ describe('объединение предложений', () => {
   });
 });
 
+describe('раздел Mac', () => {
+  it('распознаёт линейку, размер и чип из строки прайс-листа', () => {
+    expect(parseMacModel('Apple MacBook Pro 14 M4 Pro 512GB Space Black'))
+      .toEqual({ model: 'MacBook Pro 14 M4 Pro', generation: 'Pro' });
+  });
+
+  it('появляется в общем каталоге с настоящими фотографиями', async () => {
+    const listings = buildListings(aggregateOffers(await loadOffers(), defaultMarkupRules));
+    const macs = listings.filter((listing) => listing.category === 'mac');
+
+    expect(macs.length).toBeGreaterThan(0);
+    expect(macs.every((listing) => /\.(jpg|jpeg|png|webp)$/i.test(listing.image))).toBe(true);
+    expect(macs.every((listing) => !listing.image.endsWith('.svg'))).toBe(true);
+  });
+});
+
 describe('позиции каталога', () => {
   it('slug строится из модели, памяти и цвета', () => {
     expect(buildSlug({ model: 'iPhone 17 Pro Max', memory: 256, color: 'Deep Blue' }))
@@ -116,6 +132,12 @@ describe('позиции каталога', () => {
 });
 
 describe('публичные данные', () => {
+  it('в демо-каталоге нет нарисованных SVG вместо фотографий товара', async () => {
+    const listings = buildListings(aggregateOffers(await loadOffers(), defaultMarkupRules));
+
+    expect(listings.every((listing) => !listing.image.endsWith('.svg'))).toBe(true);
+  });
+
   it('в публичном товаре нет поставщика и закупочной цены', async () => {
     const views = aggregateOffers(await loadOffers(), defaultMarkupRules);
     const products = toPublicProducts(views);
