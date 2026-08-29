@@ -81,7 +81,10 @@ export function ProductCard({
         {/* Переносится на две строки на узких карточках, а не рвётся посередине. */}
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
           <AvailabilityLabel availability={availability} className="whitespace-nowrap" />
-          <span className="whitespace-nowrap text-[11px] text-ink-faint">
+          <span
+            className="whitespace-nowrap text-[11px] text-ink-faint"
+            suppressHydrationWarning
+          >
             {formatFreshness(listing.updatedAt, isStaticPreview)}
           </span>
         </div>

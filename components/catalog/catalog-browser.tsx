@@ -312,7 +312,7 @@ export function CatalogBrowser({
               : plural(visible.length, 'позиция', 'позиции', 'позиций')}`
             : 'Ничего не найдено'}
           {lastUpdate && (
-            <span className="text-ink-faint">
+            <span className="text-ink-faint" suppressHydrationWarning>
               {' '}· обновлено {formatFreshness(lastUpdate, isStaticPreview)}
             </span>
           )}

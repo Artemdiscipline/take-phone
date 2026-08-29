@@ -94,7 +94,7 @@ export function ProductDetail({
         <div>
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <AvailabilityChip availability={variant.availability} />
-            <span className="text-[12px] text-ink-faint">
+            <span className="text-[12px] text-ink-faint" suppressHydrationWarning>
               Цена обновлена {formatFreshness(variant.updatedAt, isStaticPreview)}
             </span>
           </div>
