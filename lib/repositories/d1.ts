@@ -1,3 +1,4 @@
+import { buildModelSlug } from '@/lib/catalog/normalize';
 import { defaultMarkupRules } from '@/lib/catalog/pricing';
 import type {
   Availability,
@@ -41,6 +42,17 @@ export class D1CatalogRepository implements CatalogRepository {
       for (const statement of SCHEMA) {
         await this.db.prepare(statement).run();
       }
+
+      // CREATE TABLE IF NOT EXISTS не трогает уже созданную таблицу, поэтому
+      // новые колонки добавляются отдельно. Повторный запуск падает на
+      // «duplicate column» — это ожидаемо и означает, что колонка уже есть.
+      for (const statement of ADDITIVE_COLUMNS) {
+        try {
+          await this.db.prepare(statement).run();
+        } catch {
+          // Колонка уже добавлена предыдущим запуском или миграцией.
+        }
+      }
     })();
 
     await this.ready;
@@ -59,13 +71,14 @@ export class D1CatalogRepository implements CatalogRepository {
       statements.push(
         this.db.prepare(`
           INSERT INTO source_offers (
-            id, source, external_id, match_key, brand, model, generation, memory,
-            color, sim, category, images, purchase_price, old_price, availability,
-            city, source_url, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            id, source, external_id, match_key, brand, model, model_slug, generation,
+            memory, color, sim, case_size, configuration, category, images,
+            purchase_price, old_price, availability, city, source_url, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           offer.id, offer.source, offer.externalId, offer.matchKey, offer.brand,
-          offer.model, offer.generation, offer.memory, offer.color, offer.sim,
+          offer.model, offer.modelSlug, offer.generation, offer.memory, offer.color,
+          offer.sim, offer.caseSize ?? null, offer.configuration ?? null,
           offer.category, JSON.stringify(offer.images), offer.purchasePrice,
           offer.oldPrice ?? null, offer.availability, offer.city, offer.sourceUrl,
           offer.updatedAt,
@@ -407,10 +420,13 @@ interface OfferRow {
   match_key: string;
   brand: string;
   model: string;
+  model_slug: string | null;
   generation: string;
   memory: number;
   color: string;
   sim: string;
+  case_size: number | null;
+  configuration: string | null;
   category: string;
   images: string;
   purchase_price: number;
@@ -460,10 +476,15 @@ function toOffer(row: OfferRow): SourceOffer {
     source: row.source as SourceId,
     brand: row.brand,
     model: row.model,
+    // База может быть заполнена до появления колонки — тогда ключ модели
+    // восстанавливается из названия, а не теряется.
+    modelSlug: row.model_slug || buildModelSlug(row.model),
     generation: row.generation,
     memory: row.memory,
     color: row.color,
     sim: row.sim as SimType,
+    caseSize: row.case_size ?? undefined,
+    configuration: row.configuration ?? undefined,
     category: row.category as CategoryId,
     images: parseJson<string[]>(row.images, []),
     purchasePrice: row.purchase_price,
@@ -559,10 +580,13 @@ const SCHEMA = [
     match_key TEXT NOT NULL,
     brand TEXT NOT NULL,
     model TEXT NOT NULL,
+    model_slug TEXT NOT NULL DEFAULT '',
     generation TEXT NOT NULL,
     memory INTEGER NOT NULL,
     color TEXT NOT NULL,
     sim TEXT NOT NULL,
+    case_size INTEGER,
+    configuration TEXT,
     category TEXT NOT NULL,
     images TEXT NOT NULL,
     purchase_price INTEGER NOT NULL,
@@ -574,4 +598,11 @@ const SCHEMA = [
   )`,
   'CREATE INDEX IF NOT EXISTS idx_source_offers_source ON source_offers (source)',
   'CREATE INDEX IF NOT EXISTS idx_source_offers_match ON source_offers (match_key)',
+];
+
+/** Колонки, добавленные после первой версии схемы. См. migrations/0002. */
+const ADDITIVE_COLUMNS = [
+  "ALTER TABLE source_offers ADD COLUMN model_slug TEXT NOT NULL DEFAULT ''",
+  'ALTER TABLE source_offers ADD COLUMN case_size INTEGER',
+  'ALTER TABLE source_offers ADD COLUMN configuration TEXT',
 ];

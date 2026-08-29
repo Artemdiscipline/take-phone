@@ -23,12 +23,18 @@ import {
 import { useRequest } from '@/components/order/request-store';
 import { isStaticPreview } from '@/lib/build-mode';
 import { site } from '@/lib/site';
+import type { CategoryId } from '@/lib/catalog/types';
 import { Logo } from './logo';
-import { categories, mainNav } from './nav-data';
+import { buildCategoryMenu, mainNav } from './nav-data';
 import { AppLink, useNavigate } from '@/components/site/app-link';
 
-export function Header() {
+/**
+ * @param populatedCategories категории, в которых есть товары. Приходит из
+ * серверного макета: клиентская шапка сама каталог не читает.
+ */
+export function Header({ populatedCategories = [] }: { populatedCategories?: CategoryId[] }) {
   const navigate = useNavigate();
+  const categories = buildCategoryMenu(populatedCategories);
   const { items, open, lastAdded } = useRequest();
   const [query, setQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -162,30 +168,49 @@ export function Header() {
         </div>
       </div>
 
+      {/*
+        Выпадающее меню категорий. Каждая заполненная категория ведёт на свою
+        страницу с модельными плашками, а не в общий список товаров.
+      */}
       {catalogOpen && (
-        <div className="collapse-open hidden border-t border-line bg-paper lg:block">
-          <div className="shell grid grid-cols-4 gap-2 py-6">
-            {categories.map((category) => category.href
-              ? (
-                <AppLink
-                  key={category.id}
-                  href={category.href}
-                  onClick={() => setCatalogOpen(false)}
-                  className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium transition hover:bg-surface"
-                >
-                  {category.label}
-                  <span className="text-[11px] text-ink-faint">{category.note}</span>
-                </AppLink>
-              )
-              : (
-                <span
-                  key={category.id}
-                  className="flex items-center justify-between rounded-xl px-4 py-3 text-sm text-ink-faint"
-                >
-                  {category.label}
-                  <span className="text-[11px]">{category.note}</span>
-                </span>
-              ))}
+        <div className="collapse-open hidden border-t border-line bg-paper shadow-[0_24px_48px_-32px_rgba(38,20,46,0.5)] lg:block">
+          <div className="shell py-6">
+            <p className="field-label">Категории</p>
+
+            <div className="mt-4 grid grid-cols-4 gap-2">
+              {categories.map((category) => category.href
+                ? (
+                  <AppLink
+                    key={category.id}
+                    href={category.href}
+                    onClick={() => setCatalogOpen(false)}
+                    className="group flex items-center justify-between rounded-xl border border-transparent px-4 py-3.5 text-sm font-medium transition hover:border-line hover:bg-surface"
+                  >
+                    {category.label}
+                    <ChevronRight
+                      className="size-4 text-ink-faint transition group-hover:translate-x-0.5 group-hover:text-accent"
+                      aria-hidden
+                    />
+                  </AppLink>
+                )
+                : (
+                  <span
+                    key={category.id}
+                    className="flex items-center justify-between rounded-xl px-4 py-3.5 text-sm text-ink-faint"
+                  >
+                    {category.label}
+                    <span className="text-[11px]">{category.note}</span>
+                  </span>
+                ))}
+            </div>
+
+            <AppLink
+              href="/catalog"
+              onClick={() => setCatalogOpen(false)}
+              className="mt-4 inline-flex text-[13px] font-medium text-accent transition hover:opacity-70"
+            >
+              Весь каталог целиком
+            </AppLink>
           </div>
         </div>
       )}
@@ -219,6 +244,38 @@ export function Header() {
                 )}
               </label>
             </form>
+
+            {/*
+              На телефоне каталог — это в первую очередь список категорий.
+              Полноэкранная панель уже открыта, поэтому вложенных «шторок» не
+              нужно: выбор категории делается одним касанием.
+            */}
+            <div className="border-b border-line p-4">
+              <p className="field-label px-2">Каталог</p>
+              <div className="mt-2 grid gap-1">
+                {categories.map((category) => category.href
+                  ? (
+                    <AppLink
+                      key={category.id}
+                      href={category.href}
+                      onClick={() => setMenuOpen(false)}
+                      className="flex h-13 items-center justify-between rounded-xl px-2 text-sm font-medium transition hover:bg-surface"
+                    >
+                      {category.label}
+                      <ChevronRight className="size-4 text-ink-faint" aria-hidden />
+                    </AppLink>
+                  )
+                  : (
+                    <span
+                      key={category.id}
+                      className="flex h-13 items-center justify-between rounded-xl px-2 text-sm text-ink-faint"
+                    >
+                      {category.label}
+                      <span className="text-[11px]">{category.note}</span>
+                    </span>
+                  ))}
+              </div>
+            </div>
 
             <nav className="grid divide-y divide-line text-sm">
               {mainNav.map((link) => (

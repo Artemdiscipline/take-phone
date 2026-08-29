@@ -1,29 +1,22 @@
-import Image from 'next/image';
 import {
   ArrowRight,
-  ChevronRight,
   Clock3,
-  Cpu,
-  Gamepad2,
   MapPin,
   MessageCircle,
   Phone,
   RefreshCw,
   ShieldCheck,
-  Smartphone,
   Store,
   Truck,
   UserRoundCog,
 } from 'lucide-react';
 
+import { CategoryGrid } from '@/components/catalog/category-grid';
 import { ProductCard } from '@/components/catalog/product-card';
 import { Reveal } from '@/components/site/reveal';
-import { categories } from '@/components/site/nav-data';
-import { CATEGORY_IMAGES } from '@/lib/catalog/images';
 import type { CatalogListing, CategoryId } from '@/lib/catalog/types';
 import { site } from '@/lib/site';
 import { AppLink } from '@/components/site/app-link';
-import { withBase } from '@/lib/build-mode';
 
 /** Four claims that are already part of the shop's own materials. */
 const TRUST = [
@@ -51,7 +44,13 @@ export function TrustStrip() {
   );
 }
 
-export function Categories() {
+/**
+ * Категории на главной.
+ *
+ * Каждая плитка ведёт на страницу своей категории с модельными плашками —
+ * не в общий плоский список товаров.
+ */
+export function Categories({ populated }: { populated: CategoryId[] }) {
   return (
     <section className="shell py-14 lg:py-20">
       <Reveal>
@@ -61,91 +60,17 @@ export function Categories() {
             <h2 className="h2 mt-3">Выберите технику</h2>
           </div>
           <p className="max-w-[420px] text-sm text-ink-soft sm:text-right">
-            Сейчас открыт каталог iPhone. Остальные категории подключаем
-            следующими этапами — наличие уточняйте у менеджера.
+            Откройте категорию — и выберите модель по фотографии. Остальные
+            категории подключаем следующими этапами.
           </p>
         </div>
       </Reveal>
 
-      <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {categories.map((category, index) => {
-          const image = CATEGORY_IMAGES[category.id];
-
-          const inner = (
-            <>
-              <div className="relative h-24 w-full sm:h-28">
-                {image
-                  ? (
-                    <Image
-                      src={withBase(image)}
-                      alt=""
-                      fill
-                      sizes="(max-width: 640px) 45vw, 260px"
-                      loading="lazy"
-                      className={`object-contain transition duration-500 ${
-                        category.href ? 'group-hover:scale-105' : 'opacity-45 saturate-0'
-                      }`}
-                    />
-                  )
-                  : (
-                    <span className="grid h-full place-items-center">
-                      <CategoryIcon id={category.id} />
-                    </span>
-                  )}
-              </div>
-
-              <div className="mt-4 flex items-end justify-between gap-2">
-                <div>
-                  <p className={`text-[15px] font-medium ${category.href ? '' : 'text-ink-faint'}`}>
-                    {category.label}
-                  </p>
-                  <p className="mt-0.5 text-[12px] text-ink-faint">{category.note}</p>
-                </div>
-                {category.href && (
-                  <ChevronRight
-                    className="size-4 text-ink-faint transition group-hover:translate-x-0.5"
-                    aria-hidden
-                  />
-                )}
-              </div>
-            </>
-          );
-
-          return (
-            <Reveal key={category.id} delay={Math.min(index * 60, 240)}>
-              {/*
-                Неготовая категория — не ссылка: иначе «Mac» вёл бы в каталог
-                iPhone, а это обман ожидания.
-              */}
-              {category.href
-                ? (
-                  <AppLink
-                    href={category.href}
-                    className="group flex h-full flex-col justify-between rounded-2xl border border-line bg-paper p-4 transition hover:border-line-strong hover:shadow-[0_18px_44px_-28px_rgba(38,20,46,0.45)] sm:p-5"
-                  >
-                    {inner}
-                  </AppLink>
-                )
-                : (
-                  <div
-                    aria-label={`${category.label} — ${category.note.toLowerCase()}`}
-                    className="flex h-full flex-col justify-between rounded-2xl bg-surface p-4 sm:p-5"
-                  >
-                    {inner}
-                  </div>
-                )}
-            </Reveal>
-          );
-        })}
+      <div className="mt-8">
+        <CategoryGrid populated={populated} />
       </div>
     </section>
   );
-}
-
-/** Placeholder for categories that have no product photography yet. */
-function CategoryIcon({ id }: { id: CategoryId }) {
-  const Icon = id === 'samsung' ? Smartphone : id === 'gaming' ? Gamepad2 : Cpu;
-  return <Icon className="size-9 text-ink-faint/45" strokeWidth={1.2} aria-hidden />;
 }
 
 export function FeaturedProducts({ listings }: { listings: CatalogListing[] }) {
@@ -161,7 +86,7 @@ export function FeaturedProducts({ listings }: { listings: CatalogListing[] }) {
               <h2 className="h2 mt-3">Актуально сейчас</h2>
             </div>
             <AppLink
-              href="/catalog"
+              href="/catalog/iphone"
               className="group hidden items-center gap-2 text-sm font-medium text-accent sm:inline-flex"
             >
               Все модели
@@ -179,10 +104,10 @@ export function FeaturedProducts({ listings }: { listings: CatalogListing[] }) {
         </div>
 
         <AppLink
-          href="/catalog"
+          href="/catalog/iphone"
           className="mt-6 flex h-12 items-center justify-center rounded-xl border border-line bg-paper text-sm font-medium sm:hidden"
         >
-          Весь каталог
+          Все модели iPhone
         </AppLink>
       </div>
     </section>

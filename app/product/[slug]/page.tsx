@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import { ProductDetail } from '@/components/product/product-detail';
 import { AppLink } from '@/components/site/app-link';
+import { categoryHref, categoryLabel, modelHref } from '@/lib/catalog/categories';
 import { AVAILABILITY_LABELS, colorRu } from '@/lib/catalog/normalize';
 import {
   getListingBySlug,
@@ -72,9 +73,20 @@ export default async function ProductPage({
       <nav aria-label="Хлебные крошки" className="mb-7 text-[13px] text-ink-faint">
         <AppLink href="/" className="transition hover:text-accent">Главная</AppLink>
         <span className="mx-2">/</span>
-        <AppLink href="/catalog" className="transition hover:text-accent">Каталог iPhone</AppLink>
+        <AppLink href="/catalog" className="transition hover:text-accent">Каталог</AppLink>
         <span className="mx-2">/</span>
-        <span className="text-ink-soft">{listing.model}</span>
+        <AppLink href={categoryHref(listing.category)} className="transition hover:text-accent">
+          {categoryLabel(listing.category)}
+        </AppLink>
+        <span className="mx-2">/</span>
+        <AppLink
+          href={modelHref(listing.category, listing.modelSlug)}
+          className="transition hover:text-accent"
+        >
+          {listing.modelName}
+        </AppLink>
+        <span className="mx-2">/</span>
+        <span className="text-ink-soft">{listing.memoryLabel}</span>
       </nav>
 
       <ProductDetail listing={listing} modelListings={modelListings} related={related} />

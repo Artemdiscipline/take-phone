@@ -11,21 +11,46 @@ import {
 } from 'lucide-react';
 
 import { isStaticPreview } from '@/lib/build-mode';
-import { colorRu } from '@/lib/catalog/normalize';
-import type { CatalogListing } from '@/lib/catalog/types';
+import { colorRu, configurationRu, formatCaseSize, formatMemory } from '@/lib/catalog/normalize';
+import type { CatalogListing, CatalogProduct } from '@/lib/catalog/types';
 import { formatFreshness } from '@/lib/format';
 import { ProductCard } from './product-card';
 import { ProductGridSkeleton } from './product-skeleton';
 
 type SortOrder = 'default' | 'price-asc' | 'price-desc';
 
+/** Идентификаторы фильтров. Показываются только те, у которых есть выбор. */
+type FacetId = 'model' | 'memory' | 'caseSize' | 'color' | 'sim' | 'configuration';
+
 interface Filters {
   query: string;
-  generation: string;
-  memory: string;
-  color: string;
   onlyAvailable: boolean;
   sort: SortOrder;
+  facets: Record<FacetId, string>;
+}
+
+/**
+ * Одна карточка списка.
+ *
+ * В общем списке позиция показывается свёрнутой: варианты SIM собраны внутрь,
+ * иначе в каталоге появлялись пары внешне одинаковых карточек. На странице
+ * модели, наоборот, каждый вариант — отдельная карточка: там покупатель уже
+ * выбрал модель и сравнивает именно память, цвет и SIM.
+ */
+interface Entry {
+  key: string;
+  listing: CatalogListing;
+  variant: CatalogProduct;
+  /** Показывать ли характеристики выбранного варианта, а не позиции целиком. */
+  asVariant: boolean;
+  price: number;
+  availability: CatalogListing['availability'];
+}
+
+/** Ограничение выборки: страница категории и страница модели показывают своё. */
+export interface CatalogScope {
+  categorySlug?: string;
+  modelSlug?: string;
 }
 
 /**
@@ -46,24 +71,39 @@ function readUrlQuery(): string {
   return new URLSearchParams(window.location.search).get('q') ?? '';
 }
 
+const EMPTY_FACETS: Record<FacetId, string> = {
+  model: 'all',
+  memory: 'all',
+  caseSize: 'all',
+  color: 'all',
+  sim: 'all',
+  configuration: 'all',
+};
+
 const EMPTY_FILTERS: Filters = {
   query: '',
-  generation: 'all',
-  memory: 'all',
-  color: 'all',
   onlyAvailable: false,
   sort: 'default',
+  facets: EMPTY_FACETS,
 };
 
 export function CatalogBrowser({
   initialListings,
   initialQuery = '',
   demoData = false,
+  scope,
+  expandVariants = false,
+  showSearch = true,
 }: {
   initialListings: CatalogListing[];
   initialQuery?: string;
   /** Каталог собран из демонстрационного набора — говорим об этом честно. */
   demoData?: boolean;
+  /** Какую часть каталога показывает страница. Нужен и после обновления цен. */
+  scope?: CatalogScope;
+  /** Каждый вариант — отдельная карточка (страница конкретной модели). */
+  expandVariants?: boolean;
+  showSearch?: boolean;
 }) {
   const [listings, setListings] = useState(initialListings);
   const [serverListings, setServerListings] = useState(initialListings);
@@ -102,36 +142,57 @@ export function CatalogBrowser({
       const payload = await response.json() as { listings?: CatalogListing[] };
       if (!Array.isArray(payload.listings)) throw new Error('bad payload');
 
-      setListings(payload.listings);
+      // Ответ содержит весь каталог, а страница показывает свою часть —
+      // без этого обновление цен на странице модели вывалило бы все товары.
+      setListings(payload.listings.filter((listing) => inScope(listing, scope)));
       setStatus('idle');
     } catch {
       setStatus('error');
     }
-  }, []);
+  }, [scope]);
 
-  const options = useMemo(() => ({
-    generations: unique(listings.map((listing) => listing.generation)),
-    memories: unique(listings.map((listing) => String(listing.memory)))
-      .sort((a, b) => Number(a) - Number(b)),
-    colors: unique(listings.map((listing) => listing.color)),
-  }), [listings]);
+  const entries = useMemo(
+    () => buildEntries(listings, expandVariants),
+    [listings, expandVariants],
+  );
+
+  const facets = useMemo(() => buildFacets(entries), [entries]);
 
   const visible = useMemo(() => {
     const query = filters.query.trim().toLowerCase();
 
-    const result = listings.filter((listing) => {
-      if (filters.generation !== 'all' && listing.generation !== filters.generation) return false;
-      if (filters.memory !== 'all' && String(listing.memory) !== filters.memory) return false;
-      if (filters.color !== 'all' && listing.color !== filters.color) return false;
-      if (filters.onlyAvailable && listing.availability !== 'in_stock') return false;
+    const result = entries.filter((entry) => {
+      const { listing, variant } = entry;
+      const { facets: selected } = filters;
+
+      if (selected.model !== 'all' && listing.modelSlug !== selected.model) return false;
+      if (selected.memory !== 'all' && String(listing.memory) !== selected.memory) return false;
+      if (selected.caseSize !== 'all' && String(listing.caseSize ?? '') !== selected.caseSize) return false;
+      if (selected.color !== 'all' && listing.color !== selected.color) return false;
+      if (selected.configuration !== 'all' && (listing.configuration ?? '') !== selected.configuration) {
+        return false;
+      }
+
+      // В свёрнутом списке позиция подходит, если подходит хотя бы один её вариант.
+      if (selected.sim !== 'all') {
+        const matches = entry.asVariant
+          ? variant.sim === selected.sim
+          : listing.variants.some((option) => option.sim === selected.sim);
+        if (!matches) return false;
+      }
+
+      if (filters.onlyAvailable && entry.availability !== 'in_stock') return false;
 
       if (query) {
         const haystack = [
           listing.title,
-          listing.model,
+          listing.modelName,
           listing.memoryLabel,
+          listing.caseSizeLabel ?? '',
           listing.color,
           colorRu(listing.color) ?? '',
+          listing.configuration ? configurationRu(listing.configuration) : '',
+          variant.simLabel,
         ].join(' ').toLowerCase();
         if (!haystack.includes(query)) return false;
       }
@@ -142,55 +203,65 @@ export function CatalogBrowser({
     if (filters.sort === 'price-asc') return [...result].sort((a, b) => a.price - b.price);
     if (filters.sort === 'price-desc') return [...result].sort((a, b) => b.price - a.price);
     return result;
-  }, [listings, filters]);
+  }, [entries, filters]);
 
   const activeCount = countActive(filters);
   const lastUpdate = listings.map((listing) => listing.updatedAt).sort().at(-1);
 
-  const update = <K extends keyof Filters>(key: K, value: Filters[K]) =>
-    setFilters((current) => ({ ...current, [key]: value }));
+  const setFacet = (id: FacetId, value: string) =>
+    setFilters((current) => ({ ...current, facets: { ...current.facets, [id]: value } }));
 
   return (
     <div>
       <div className="card p-3 sm:p-4">
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
-          <label className="flex h-12 flex-1 items-center gap-2.5 rounded-xl bg-surface px-4">
-            <Search className="size-4 shrink-0 text-ink-faint" aria-hidden />
-            <input
-              value={filters.query}
-              onChange={(event) => update('query', event.target.value)}
-              className="w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-ink-faint"
-              placeholder="Модель, память или цвет"
-              aria-label="Поиск по каталогу"
-              type="search"
-            />
-            {filters.query && (
-              <button type="button" onClick={() => update('query', '')} aria-label="Очистить поиск">
-                <X className="size-4 text-ink-faint" aria-hidden />
+          {showSearch && (
+            <label className="flex h-12 flex-1 items-center gap-2.5 rounded-xl bg-surface px-4">
+              <Search className="size-4 shrink-0 text-ink-faint" aria-hidden />
+              <input
+                value={filters.query}
+                onChange={(event) =>
+                  setFilters((current) => ({ ...current, query: event.target.value }))}
+                className="w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-ink-faint"
+                placeholder="Модель, память или цвет"
+                aria-label="Поиск по каталогу"
+                type="search"
+              />
+              {filters.query && (
+                <button
+                  type="button"
+                  onClick={() => setFilters((current) => ({ ...current, query: '' }))}
+                  aria-label="Очистить поиск"
+                >
+                  <X className="size-4 text-ink-faint" aria-hidden />
+                </button>
+              )}
+            </label>
+          )}
+
+          <div className={`flex gap-2 ${showSearch ? '' : 'flex-1'}`}>
+            {facets.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setFiltersOpen((value) => !value)}
+                aria-expanded={filtersOpen}
+                aria-controls="catalog-filters"
+                className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-surface px-4 text-sm font-medium transition hover:bg-surface-2 lg:flex-none"
+              >
+                <SlidersHorizontal className="size-4" aria-hidden />
+                Фильтры
+                {activeCount > 0 && (
+                  <span className="grid size-5 place-items-center rounded-full bg-plum text-[11px] text-white">
+                    {activeCount}
+                  </span>
+                )}
               </button>
             )}
-          </label>
-
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setFiltersOpen((value) => !value)}
-              aria-expanded={filtersOpen}
-              aria-controls="catalog-filters"
-              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-surface px-4 text-sm font-medium transition hover:bg-surface-2 lg:flex-none"
-            >
-              <SlidersHorizontal className="size-4" aria-hidden />
-              Фильтры
-              {activeCount > 0 && (
-                <span className="grid size-5 place-items-center rounded-full bg-plum text-[11px] text-white">
-                  {activeCount}
-                </span>
-              )}
-            </button>
 
             <button
               type="button"
-              onClick={() => update('onlyAvailable', !filters.onlyAvailable)}
+              onClick={() =>
+                setFilters((current) => ({ ...current, onlyAvailable: !current.onlyAvailable }))}
               aria-pressed={filters.onlyAvailable}
               className={`h-12 shrink-0 rounded-xl px-4 text-sm font-medium transition ${
                 filters.onlyAvailable
@@ -203,40 +274,26 @@ export function CatalogBrowser({
           </div>
         </div>
 
-        {filtersOpen && (
+        {filtersOpen && facets.length > 0 && (
           <div
             id="catalog-filters"
             className="collapse-open mt-3 grid gap-2 border-t border-line pt-3 sm:grid-cols-2 lg:grid-cols-4"
           >
-            <SelectFilter
-              label="Модель"
-              value={filters.generation}
-              onChange={(value) => update('generation', value)}
-              options={[{ value: 'all', label: 'Все модели' },
-                ...options.generations.map((value) => ({ value, label: `iPhone ${value}` }))]}
-            />
-            <SelectFilter
-              label="Память"
-              value={filters.memory}
-              onChange={(value) => update('memory', value)}
-              options={[{ value: 'all', label: 'Любая' },
-                ...options.memories.map((value) => ({
-                  value,
-                  label: Number(value) >= 1024 ? `${Number(value) / 1024} ТБ` : `${value} ГБ`,
-                }))]}
-            />
-            <SelectFilter
-              label="Цвет"
-              value={filters.color}
-              onChange={(value) => update('color', value)}
-              options={[{ value: 'all', label: 'Любой' },
-                ...options.colors.map((value) => ({ value, label: colorRu(value) ?? value }))]}
-            />
+            {facets.map((facet) => (
+              <SelectFilter
+                key={facet.id}
+                label={facet.label}
+                value={filters.facets[facet.id]}
+                onChange={(value) => setFacet(facet.id, value)}
+                options={[{ value: 'all', label: facet.anyLabel }, ...facet.options]}
+              />
+            ))}
             <SelectFilter
               label="Сортировка"
               icon={<ArrowUpDown className="size-4 text-ink-faint" aria-hidden />}
               value={filters.sort}
-              onChange={(value) => update('sort', value as SortOrder)}
+              onChange={(value) =>
+                setFilters((current) => ({ ...current, sort: value as SortOrder }))}
               options={[
                 { value: 'default', label: 'По наличию' },
                 { value: 'price-asc', label: 'Сначала дешевле' },
@@ -250,7 +307,9 @@ export function CatalogBrowser({
       <div className="mt-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <p className="text-sm text-ink-soft">
           {visible.length > 0
-            ? `${visible.length} ${plural(visible.length, 'позиция', 'позиции', 'позиций')}`
+            ? `${visible.length} ${expandVariants
+              ? plural(visible.length, 'вариант', 'варианта', 'вариантов')
+              : plural(visible.length, 'позиция', 'позиции', 'позиций')}`
             : 'Ничего не найдено'}
           {lastUpdate && (
             <span className="text-ink-faint">
@@ -303,8 +362,13 @@ export function CatalogBrowser({
           : visible.length > 0
             ? (
               <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-                {visible.map((listing, index) => (
-                  <ProductCard key={listing.id} listing={listing} priority={index < 4} />
+                {visible.map((entry, index) => (
+                  <ProductCard
+                    key={entry.key}
+                    listing={entry.listing}
+                    variant={entry.asVariant ? entry.variant : undefined}
+                    priority={index < 4}
+                  />
                 ))}
               </div>
             )
@@ -328,6 +392,130 @@ export function CatalogBrowser({
       </div>
     </div>
   );
+}
+
+function inScope(listing: CatalogListing, scope: CatalogScope | undefined): boolean {
+  if (!scope) return true;
+  if (scope.categorySlug && listing.categorySlug !== scope.categorySlug) return false;
+  if (scope.modelSlug && listing.modelSlug !== scope.modelSlug) return false;
+  return true;
+}
+
+function buildEntries(listings: CatalogListing[], expandVariants: boolean): Entry[] {
+  if (!expandVariants) {
+    return listings.map((listing) => {
+      const variant = listing.variants.find((item) => item.id === listing.defaultVariantId)
+        ?? listing.variants[0];
+
+      return {
+        key: listing.id,
+        listing,
+        variant,
+        asVariant: false,
+        price: listing.price,
+        availability: listing.availability,
+      };
+    });
+  }
+
+  return listings.flatMap((listing) =>
+    listing.variants.map((variant) => ({
+      key: variant.id,
+      listing,
+      variant,
+      asVariant: true,
+      price: variant.price,
+      availability: variant.availability,
+    })));
+}
+
+interface Facet {
+  id: FacetId;
+  label: string;
+  anyLabel: string;
+  options: { value: string; label: string }[];
+}
+
+/**
+ * Набор фильтров считается по самим данным.
+ *
+ * Фильтр с единственным значением бесполезен, поэтому он не появляется: на
+ * странице модели сам собой исчезает выбор модели, у часов — объём памяти,
+ * а у телефонов — размер корпуса.
+ */
+function buildFacets(entries: Entry[]): Facet[] {
+  const models = uniqueBy(
+    entries.map((entry) => ({ value: entry.listing.modelSlug, label: entry.listing.modelName })),
+  );
+
+  const memories = uniqueBy(
+    entries
+      .filter((entry) => entry.listing.memory > 0)
+      .map((entry) => ({
+        value: String(entry.listing.memory),
+        label: formatMemory(entry.listing.memory),
+        sort: entry.listing.memory,
+      })),
+  );
+
+  const caseSizes = uniqueBy(
+    entries
+      .filter((entry) => entry.listing.caseSize)
+      .map((entry) => ({
+        value: String(entry.listing.caseSize),
+        label: formatCaseSize(entry.listing.caseSize as number),
+        sort: entry.listing.caseSize,
+      })),
+  );
+
+  const colors = uniqueBy(
+    entries.map((entry) => ({
+      value: entry.listing.color,
+      label: colorRu(entry.listing.color) ?? entry.listing.color,
+    })),
+  );
+
+  const configurations = uniqueBy(
+    entries
+      .filter((entry) => entry.listing.configuration)
+      .map((entry) => ({
+        value: entry.listing.configuration as string,
+        label: configurationRu(entry.listing.configuration as string),
+      })),
+  );
+
+  const sims = uniqueBy(
+    entries.flatMap((entry) =>
+      (entry.asVariant ? [entry.variant] : entry.listing.variants).map((variant) => ({
+        value: variant.sim,
+        label: variant.simLabel,
+      }))),
+  );
+
+  // «Тип SIM» у часов означает сотовый модуль — подпись подстраивается.
+  const simLabel = sims.some((option) => option.value.startsWith('gps')) ? 'Связь' : 'Тип SIM';
+
+  const all: Facet[] = [
+    { id: 'model', label: 'Модель', anyLabel: 'Все модели', options: models },
+    { id: 'memory', label: 'Память', anyLabel: 'Любая', options: memories },
+    { id: 'caseSize', label: 'Корпус', anyLabel: 'Любой', options: caseSizes },
+    { id: 'color', label: 'Цвет', anyLabel: 'Любой', options: colors },
+    { id: 'configuration', label: 'Ремешок', anyLabel: 'Любой', options: configurations },
+    { id: 'sim', label: simLabel, anyLabel: 'Любой', options: sims },
+  ];
+
+  return all.filter((facet) => facet.options.length > 1);
+}
+
+function uniqueBy(
+  items: { value: string; label: string; sort?: number }[],
+): { value: string; label: string }[] {
+  const seen = new Map<string, { value: string; label: string; sort?: number }>();
+  for (const item of items) if (!seen.has(item.value)) seen.set(item.value, item);
+
+  return [...seen.values()]
+    .sort((a, b) => a.sort !== undefined && b.sort !== undefined ? a.sort - b.sort : 0)
+    .map(({ value, label }) => ({ value, label }));
 }
 
 function SelectFilter({
@@ -361,15 +549,8 @@ function SelectFilter({
   );
 }
 
-function unique(values: string[]): string[] {
-  return [...new Set(values)];
-}
-
 function countActive(filters: Filters): number {
-  let count = 0;
-  if (filters.generation !== 'all') count += 1;
-  if (filters.memory !== 'all') count += 1;
-  if (filters.color !== 'all') count += 1;
+  let count = Object.values(filters.facets).filter((value) => value !== 'all').length;
   if (filters.sort !== 'default') count += 1;
   return count;
 }

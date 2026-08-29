@@ -13,7 +13,19 @@ export type CategoryId =
   | 'gaming'
   | 'electronics';
 
-export type SimType = 'nano+esim' | 'dual-sim' | 'esim' | 'unknown';
+/**
+ * Способ связи устройства.
+ *
+ * Для телефонов это тип SIM, для Apple Watch — наличие сотового модуля:
+ * поле одно и то же, поэтому фильтр «связь» работает в обеих категориях.
+ */
+export type SimType =
+  | 'nano+esim'
+  | 'dual-sim'
+  | 'esim'
+  | 'gps'
+  | 'gps-cellular'
+  | 'unknown';
 
 /**
  * A single offer as published by one source, after normalisation.
@@ -26,10 +38,16 @@ export interface SourceOffer {
   source: SourceId;
   brand: string;
   model: string;
+  /** Адрес модели внутри категории: `iphone-17-pro-max`. */
+  modelSlug: string;
   generation: string;
   memory: number;
   color: string;
   sim: SimType;
+  /** Диаметр корпуса в миллиметрах — только у часов. */
+  caseSize?: number;
+  /** Комплектация: ремешок у часов, набор аксессуаров у остальных категорий. */
+  configuration?: string;
   category: CategoryId;
   images: string[];
   purchasePrice: number;
@@ -50,6 +68,9 @@ export interface RawOffer {
   memory?: string | number;
   color?: string;
   sim?: string;
+  /** «49 мм», «46mm», 42 — приводится к числу нормализатором. */
+  caseSize?: string | number;
+  configuration?: string;
   price: number | string;
   oldPrice?: number | string;
   availability?: string | boolean;
@@ -67,16 +88,33 @@ export interface CatalogProduct {
   matchKey: string;
   brand: string;
   model: string;
+  /** Дублирует `model`; отдельное имя нужно группировке моделей. */
+  modelName: string;
+  /** Ключ модельной плашки: `iphone-17-pro-max`. */
+  modelSlug: string;
   generation: string;
   memory: number;
+  /** Публичное имя объёма памяти. Совпадает с `memory`. */
+  storage: number;
   memoryLabel: string;
   color: string;
   colorHex: string;
   sim: SimType;
+  /** Публичное имя типа связи. Совпадает с `sim`. */
+  simType: SimType;
   simLabel: string;
+  /** Диаметр корпуса в миллиметрах — только у часов. */
+  caseSize?: number;
+  caseSizeLabel?: string;
+  /** Комплектация: ремешок у часов. */
+  configuration?: string;
   category: CategoryId;
+  /** Сегмент адреса категории: `iphone`, `apple-watch`. */
+  categorySlug: string;
   title: string;
   images: string[];
+  /** Основное изображение. Совпадает с `images[0]`. */
+  image: string;
   price: number;
   oldPrice?: number;
   availability: Availability;
@@ -99,14 +137,22 @@ export interface CatalogListing {
   slug: string;
   brand: string;
   model: string;
+  modelName: string;
+  modelSlug: string;
   generation: string;
   memory: number;
+  storage: number;
   memoryLabel: string;
   color: string;
   colorHex: string;
+  caseSize?: number;
+  caseSizeLabel?: string;
+  configuration?: string;
   category: CategoryId;
+  categorySlug: string;
   title: string;
   images: string[];
+  image: string;
   /** Варианты по типу SIM, от доступных и дешёвых к остальным. */
   variants: CatalogProduct[];
   /** Вариант, который показывается по умолчанию. */
@@ -120,6 +166,31 @@ export interface CatalogListing {
   hasSimChoice: boolean;
   city: string;
   updatedAt: string;
+}
+
+/**
+ * Модельная плашка каталога: `iPhone 17 Pro Max` со всеми своими вариантами.
+ *
+ * Собирается из данных по `modelSlug`, а не описывается вручную, поэтому новая
+ * модель в прайс-листе сама появляется в категории.
+ */
+export interface CatalogModelGroup {
+  id: string;
+  category: CategoryId;
+  categorySlug: string;
+  modelSlug: string;
+  modelName: string;
+  href: string;
+  image: string;
+  /** Минимальная цена среди доступных вариантов; null — если доступных нет. */
+  price: number | null;
+  /** Сколько позиций каталога стоит за плашкой. */
+  listingCount: number;
+  /** Сколько отдельных вариантов (память/цвет/SIM/размер) внутри. */
+  variantCount: number;
+  availability: Availability;
+  /** Объёмы памяти или размеры корпуса — короткая подпись под названием. */
+  optionSummary: string;
 }
 
 /** Everything the staff panel needs about one public product. */

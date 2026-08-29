@@ -1,3 +1,4 @@
+import { CATEGORY_ORDER, categoryHref, categoryLabel } from '@/lib/catalog/categories';
 import type { CategoryId } from '@/lib/catalog/types';
 
 export interface NavLink {
@@ -17,7 +18,7 @@ export interface CategoryEntry {
   id: CategoryId;
   label: string;
   /**
-   * Адрес есть только у готовых категорий. Неготовая категория не должна
+   * Адрес есть только у заполненных категорий. Пустая категория не должна
    * вести в каталог iPhone — покупатель ждал бы Mac, а попал бы к телефонам.
    */
   href: string | null;
@@ -25,13 +26,22 @@ export interface CategoryEntry {
   note: string;
 }
 
-export const categories: CategoryEntry[] = [
-  { id: 'iphone', label: 'iPhone', href: '/catalog', ready: true, note: 'Каталог открыт' },
-  { id: 'mac', label: 'Mac', href: null, ready: false, note: 'Скоро' },
-  { id: 'ipad', label: 'iPad', href: null, ready: false, note: 'Скоро' },
-  { id: 'watch', label: 'Apple Watch', href: null, ready: false, note: 'Скоро' },
-  { id: 'airpods', label: 'AirPods', href: null, ready: false, note: 'Скоро' },
-  { id: 'samsung', label: 'Samsung', href: null, ready: false, note: 'Скоро' },
-  { id: 'gaming', label: 'Игровая техника', href: null, ready: false, note: 'Скоро' },
-  { id: 'electronics', label: 'Другая электроника', href: null, ready: false, note: 'Скоро' },
-];
+/**
+ * Меню каталога.
+ *
+ * Готовность берётся из данных: категория активна, если в ней есть хотя бы
+ * одна позиция. Список категорий приходит со страницы (серверный рендер), а не
+ * зашит в клиентском компоненте — иначе появление Mac в прайс-листе пришлось
+ * бы дублировать правкой кода.
+ */
+export function buildCategoryMenu(populated: CategoryId[]): CategoryEntry[] {
+  const ready = new Set(populated);
+
+  return CATEGORY_ORDER.map((id) => ({
+    id,
+    label: categoryLabel(id),
+    href: ready.has(id) ? categoryHref(id) : null,
+    ready: ready.has(id),
+    note: ready.has(id) ? 'Выбрать модель' : 'Скоро',
+  }));
+}

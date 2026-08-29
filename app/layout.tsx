@@ -6,6 +6,7 @@ import { RequestProvider } from '@/components/order/request-store';
 import { Footer } from '@/components/site/footer';
 import { Header } from '@/components/site/header';
 import { withBase } from '@/lib/build-mode';
+import { getPopulatedCategories } from '@/lib/server/catalog-service';
 import { site } from '@/lib/site';
 import './globals.css';
 
@@ -49,14 +50,21 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  /*
+    Меню каталога строится по данным: активны только те категории, в которых
+    действительно есть позиции. Каталог уже загружен и закэширован страницами,
+    поэтому лишнего запроса здесь не возникает.
+  */
+  const populatedCategories = await getPopulatedCategories();
+
   return (
     <html lang="ru">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <RequestProvider>
-          <Header />
+          <Header populatedCategories={populatedCategories} />
           <main className="min-h-[60vh]">{children}</main>
-          <Footer />
+          <Footer populatedCategories={populatedCategories} />
           <RequestDrawer />
         </RequestProvider>
       </body>

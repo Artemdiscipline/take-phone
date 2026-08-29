@@ -157,6 +157,91 @@ const SKUS: FixtureSku[] = [
     basePrice: 114_990,
     lines: { 'first-apple': { delta: 0, state: 'out' }, 'ice-apple': { delta: 800, state: 'out' } },
   },
+
+  /*
+    Прошлые поколения и «доступная» модель линейки. Нужны, чтобы каталог
+    показывал не одну актуальную серию, а нормальную сетку моделей — и чтобы
+    было видно, как новая модель из прайс-листа сама встаёт в правильное место.
+  */
+  {
+    key: '17e-128-black', model: 'iPhone 17e', memory: 128, color: 'Black', sim: 'esim',
+    basePrice: 54_990, reference: 59_990,
+    lines: { 'first-apple': { delta: 0, state: 'in' }, 'ice-apple': { delta: 600, state: 'in' }, phone24: { delta: 400, state: 'in' } },
+  },
+  {
+    key: '17e-128-white', model: 'iPhone 17e', memory: 128, color: 'White', sim: 'esim',
+    basePrice: 54_990,
+    lines: { 'ice-apple': { delta: 0, state: 'in' }, phone24: { delta: 700, state: 'in' } },
+  },
+  {
+    key: '17e-256-black', model: 'iPhone 17e', memory: 256, color: 'Black', sim: 'esim',
+    basePrice: 62_490,
+    lines: { 'first-apple': { delta: 0, state: 'in' }, 'ice-apple': { delta: 900, state: 'order' } },
+  },
+
+  {
+    key: '16pm-256-blacktitanium', model: 'iPhone 16 Pro Max', memory: 256, color: 'Black Titanium', sim: 'esim',
+    basePrice: 99_990, reference: 112_990,
+    lines: { 'first-apple': { delta: 0, state: 'in' }, 'ice-apple': { delta: 1_100, state: 'in' }, phone24: { delta: 600, state: 'in' } },
+  },
+  {
+    key: '16pm-256-naturaltitanium', model: 'iPhone 16 Pro Max', memory: 256, color: 'Natural Titanium', sim: 'esim',
+    basePrice: 100_490,
+    lines: { 'ice-apple': { delta: 0, state: 'in' }, phone24: { delta: 800, state: 'out' } },
+  },
+  {
+    key: '16pm-512-deserttitanium', model: 'iPhone 16 Pro Max', memory: 512, color: 'Desert Titanium', sim: 'esim',
+    basePrice: 119_990,
+    lines: { 'first-apple': { delta: 0, state: 'order' }, 'ice-apple': { delta: 1_400, state: 'order' } },
+  },
+  {
+    key: '16pm-256-blacktitanium-dual', model: 'iPhone 16 Pro Max', memory: 256, color: 'Black Titanium', sim: 'dual',
+    basePrice: 106_990,
+    lines: { phone24: { delta: 0, state: 'in' }, 'ice-apple': { delta: 900, state: 'order' } },
+  },
+
+  {
+    key: '16p-256-blacktitanium', model: 'iPhone 16 Pro', memory: 256, color: 'Black Titanium', sim: 'esim',
+    basePrice: 89_990, reference: 99_990,
+    lines: { 'first-apple': { delta: 0, state: 'in' }, phone24: { delta: 700, state: 'in' } },
+  },
+  {
+    key: '16p-256-naturaltitanium', model: 'iPhone 16 Pro', memory: 256, color: 'Natural Titanium', sim: 'esim',
+    basePrice: 90_490,
+    lines: { 'ice-apple': { delta: 0, state: 'in' }, 'first-apple': { delta: 1_200, state: 'out' } },
+  },
+
+  {
+    key: '16plus-128-ultramarine', model: 'iPhone 16 Plus', memory: 128, color: 'Ultramarine', sim: 'esim',
+    basePrice: 71_990,
+    lines: { 'first-apple': { delta: 0, state: 'in' }, 'ice-apple': { delta: 500, state: 'in' } },
+  },
+  {
+    key: '16plus-256-teal', model: 'iPhone 16 Plus', memory: 256, color: 'Teal', sim: 'esim',
+    basePrice: 79_490,
+    lines: { phone24: { delta: 0, state: 'order' }, 'ice-apple': { delta: 800, state: 'order' } },
+  },
+
+  {
+    key: '16-128-ultramarine', model: 'iPhone 16', memory: 128, color: 'Ultramarine', sim: 'esim',
+    basePrice: 63_990, reference: 71_990,
+    lines: { 'first-apple': { delta: 0, state: 'in' }, 'ice-apple': { delta: 700, state: 'in' }, phone24: { delta: 400, state: 'in' } },
+  },
+  {
+    key: '16-128-black', model: 'iPhone 16', memory: 128, color: 'Black', sim: 'esim',
+    basePrice: 63_490,
+    lines: { 'ice-apple': { delta: 0, state: 'in' }, phone24: { delta: 900, state: 'in' } },
+  },
+  {
+    key: '16-256-teal', model: 'iPhone 16', memory: 256, color: 'Teal', sim: 'esim',
+    basePrice: 71_490,
+    lines: { 'first-apple': { delta: 0, state: 'in' }, 'ice-apple': { delta: 600, state: 'out' } },
+  },
+  {
+    key: '16-256-pink', model: 'iPhone 16', memory: 256, color: 'Pink', sim: 'esim',
+    basePrice: 71_990,
+    lines: { phone24: { delta: 0, state: 'in' } },
+  },
 ];
 
 const STATE_LABELS = {

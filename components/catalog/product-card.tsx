@@ -6,27 +6,43 @@ import { Check, Heart, Plus } from 'lucide-react';
 import { useRequest } from '@/components/order/request-store';
 import { AppLink } from '@/components/site/app-link';
 import { isStaticPreview, withBase } from '@/lib/build-mode';
-import type { CatalogListing } from '@/lib/catalog/types';
+import type { CatalogListing, CatalogProduct } from '@/lib/catalog/types';
 import { formatFreshness, formatPrice } from '@/lib/format';
 import { terms } from '@/lib/site';
 import { AvailabilityLabel } from './availability';
 
 export function ProductCard({
   listing,
+  variant: fixedVariant,
   priority = false,
 }: {
   listing: CatalogListing;
+  /**
+   * Показать именно этот вариант, а не позицию целиком.
+   *
+   * Используется на странице модели: там каждый вариант (память, цвет, SIM)
+   * идёт отдельной карточкой, поэтому и заголовок, и наличие, и цена — его
+   * собственные, а не сводные по позиции.
+   */
+  variant?: CatalogProduct;
   priority?: boolean;
 }) {
   const { add, has, toggleFavourite, isFavourite, lastAdded } = useRequest();
 
-  // Карточка добавляет вариант по умолчанию: доступный и самый выгодный.
-  const variant = listing.variants.find((item) => item.id === listing.defaultVariantId)
+  // Без явного варианта карточка добавляет вариант по умолчанию: доступный и
+  // самый выгодный.
+  const variant = fixedVariant
+    ?? listing.variants.find((item) => item.id === listing.defaultVariantId)
     ?? listing.variants[0];
 
   const inRequest = has(variant.matchKey);
   const favourite = isFavourite(listing.slug);
-  const soldOut = listing.availability === 'out_of_stock';
+  const soldOut = fixedVariant ? variant.availability === 'out_of_stock' : listing.availability === 'out_of_stock';
+  const availability = fixedVariant ? variant.availability : listing.availability;
+  const price = fixedVariant ? variant.price : listing.price;
+  const oldPrice = fixedVariant ? variant.oldPrice : listing.oldPrice;
+  const hasSimChoice = fixedVariant ? false : listing.hasSimChoice;
+  const title = fixedVariant ? variant.title : listing.title;
 
   return (
     <article className="product-card group relative">
@@ -64,7 +80,7 @@ export function ProductCard({
       <div className="flex flex-1 flex-col p-4 sm:p-5">
         {/* Переносится на две строки на узких карточках, а не рвётся посередине. */}
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-          <AvailabilityLabel availability={listing.availability} className="whitespace-nowrap" />
+          <AvailabilityLabel availability={availability} className="whitespace-nowrap" />
           <span className="whitespace-nowrap text-[11px] text-ink-faint">
             {formatFreshness(listing.updatedAt, isStaticPreview)}
           </span>
@@ -72,16 +88,16 @@ export function ProductCard({
 
         <h3 className="mt-3 hyphens-auto break-words text-[15px] font-medium leading-snug tracking-[-0.01em]">
           <AppLink href={`/product/${listing.slug}`} className="transition hover:text-accent">
-            {listing.title}
+            {title}
           </AppLink>
         </h3>
 
         <p className="mt-1.5 text-[13px] text-ink-soft">
-          {listing.memoryLabel}
-          {listing.hasSimChoice ? ' · eSIM или 2 SIM' : ` · ${variant.simLabel}`}
+          {listing.caseSizeLabel ?? listing.memoryLabel}
+          {hasSimChoice ? ' · eSIM или 2 SIM' : ` · ${variant.simLabel}`}
         </p>
 
-        {listing.availability === 'to_order' && (
+        {availability === 'to_order' && (
           <p className="mt-3 rounded-lg bg-order-soft px-2.5 py-1.5 text-[12px] text-order">
             Под заказ — дешевле на {formatPrice(terms.preorderDiscount)}
           </p>
@@ -89,14 +105,14 @@ export function ProductCard({
 
         <div className="mt-auto flex items-end justify-between gap-3 pt-5">
           <div className="min-w-0">
-            {listing.oldPrice && (
+            {oldPrice && (
               <p className="text-[12px] text-ink-faint line-through">
-                {formatPrice(listing.oldPrice)}
+                {formatPrice(oldPrice)}
               </p>
             )}
             <p className="text-[19px] font-semibold tracking-[-0.02em]">
-              {listing.hasSimChoice && <span className="text-ink-faint">от </span>}
-              {formatPrice(listing.price)}
+              {hasSimChoice && <span className="text-ink-faint">от </span>}
+              {formatPrice(price)}
             </p>
           </div>
 
@@ -105,8 +121,8 @@ export function ProductCard({
             onClick={() => add(listing, variant)}
             disabled={soldOut}
             aria-label={inRequest
-              ? `${listing.title} уже в заявке`
-              : `Добавить ${listing.title} в заявку`}
+              ? `${title} уже в заявке`
+              : `Добавить ${title} в заявку`}
             className={`grid size-11 shrink-0 place-items-center rounded-xl transition disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-ink-faint ${
               inRequest ? 'bg-stock-soft text-stock' : 'bg-plum text-white hover:bg-plum-soft'
             }`}

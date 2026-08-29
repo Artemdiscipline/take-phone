@@ -208,6 +208,38 @@ summary {
   border-color: var(--accent);
 }
 
+/*
+  Модельная плашка. Отличается от карточки товара: изображение крупнее, а
+  подъём при наведении мягче — плашек в сетке меньше и они больше.
+*/
+.model-card {
+  height: 100%;
+  transition:
+    border-color 280ms var(--ease),
+    box-shadow 280ms var(--ease),
+    transform 280ms var(--ease);
+}
+
+@media (hover: hover) {
+  .model-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--line-strong);
+    box-shadow: 0 22px 50px -30px rgba(38, 20, 46, 0.5);
+  }
+
+  .model-card:hover .model-card__image {
+    transform: scale(1.045);
+  }
+}
+
+.model-card:focus-visible {
+  border-color: var(--accent);
+}
+
+.model-card__image {
+  transition: transform 560ms var(--ease);
+}
+
 .status-dot {
   display: inline-block;
   width: 6px;
@@ -394,16 +426,20 @@ summary {
   }
 
   .product-card,
-  .product-card__image {
+  .product-card__image,
+  .model-card,
+  .model-card__image {
     transition: none;
   }
 
   @media (hover: hover) {
-    .product-card:hover {
+    .product-card:hover,
+    .model-card:hover {
       transform: none;
     }
 
-    .product-card:hover .product-card__image {
+    .product-card:hover .product-card__image,
+    .model-card:hover .model-card__image {
       transform: none;
     }
   }

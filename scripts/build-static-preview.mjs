@@ -30,6 +30,8 @@ const EXCLUDED = ['app/api', 'app/staff'];
 const ISR_PAGES = [
   'app/page.tsx',
   'app/catalog/page.tsx',
+  'app/catalog/[category]/page.tsx',
+  'app/catalog/[category]/[model]/page.tsx',
   'app/product/[slug]/page.tsx',
 ];
 

@@ -7,7 +7,7 @@ import {
   TrustStrip,
 } from '@/components/home/sections';
 import { Hero } from '@/components/home/hero';
-import { getPublicCatalog } from '@/lib/server/catalog-service';
+import { getPopulatedCategories, getPublicCatalog } from '@/lib/server/catalog-service';
 import { site } from '@/lib/site';
 
 // ISR: на Workers список обновляется раз в минуту, при статическом экспорте
@@ -15,17 +15,26 @@ import { site } from '@/lib/site';
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const { listings } = await getPublicCatalog();
+  const [{ listings }, populatedCategories] = await Promise.all([
+    getPublicCatalog(),
+    getPopulatedCategories(),
+  ]);
 
+  /*
+    Витрина главной — про телефоны: список уже отсортирован от актуальных
+    моделей к старым, поэтому первым доступным iPhone оказывается флагман
+    текущей серии. Отдельного «маркетингового» списка тут нет.
+  */
   const inStock = listings.filter((listing) => listing.availability === 'in_stock');
-  const featured = inStock.find((listing) => listing.generation === 'Pro Max') ?? inStock[0] ?? null;
-  const highlights = inStock.slice(0, 8);
+  const iphones = inStock.filter((listing) => listing.category === 'iphone');
+  const featured = iphones[0] ?? inStock[0] ?? null;
+  const highlights = iphones.slice(0, 8);
 
   return (
     <>
       <Hero featured={featured} />
       <TrustStrip />
-      <Categories />
+      <Categories populated={populatedCategories} />
       <FeaturedProducts listings={highlights} />
       <HowItWorks />
       <ServicePromo />

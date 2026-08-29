@@ -1,10 +1,13 @@
 import { isStaticPreview } from '@/lib/build-mode';
 import { site } from '@/lib/site';
 import { Logo } from './logo';
-import { categories, mainNav } from './nav-data';
+import type { CategoryId } from '@/lib/catalog/types';
+import { buildCategoryMenu, mainNav } from './nav-data';
 import { AppLink } from '@/components/site/app-link';
 
-export function Footer() {
+export function Footer({ populatedCategories = [] }: { populatedCategories?: CategoryId[] }) {
+  const categories = buildCategoryMenu(populatedCategories);
+
   return (
     <footer className="border-t border-line bg-surface">
       <div className="shell grid gap-10 py-14 md:grid-cols-[1.2fr_1fr_1fr_1.1fr]">

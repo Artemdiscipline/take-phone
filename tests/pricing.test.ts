@@ -20,6 +20,7 @@ function offer(patch: Partial<SourceOffer> = {}): SourceOffer {
     source: 'first-apple',
     brand: 'Apple',
     model: 'iPhone 17 Pro Max',
+    modelSlug: 'iphone-17-pro-max',
     generation: 'Pro Max',
     memory: 256,
     color: 'Deep Blue',

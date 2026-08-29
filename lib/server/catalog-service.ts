@@ -1,7 +1,10 @@
-import { aggregateOffers, buildListings } from '@/lib/catalog/aggregate';
+import { aggregateOffers, buildListings, buildModelGroups } from '@/lib/catalog/aggregate';
+import { categoryIdBySlug, categorySlug as toCategorySlug } from '@/lib/catalog/categories';
 import type {
   CatalogFilters,
   CatalogListing,
+  CatalogModelGroup,
+  CategoryId,
   StaffProductView,
   SyncRun,
 } from '@/lib/catalog/types';
@@ -106,6 +109,83 @@ export async function getPublicCatalog(): Promise<PublicCatalog> {
   };
 }
 
+/** Категории, в которых сейчас есть хотя бы одна позиция. */
+export async function getPopulatedCategories(): Promise<CategoryId[]> {
+  const { listings } = await getPublicCatalog();
+  return [...new Set(listings.map((listing) => listing.category))];
+}
+
+export interface CategoryCatalog {
+  category: CategoryId;
+  categorySlug: string;
+  /** Модельные плашки категории — первое, что видит покупатель. */
+  models: CatalogModelGroup[];
+  /** Все позиции категории — список под плашками. */
+  listings: CatalogListing[];
+  demoData: boolean;
+}
+
+/**
+ * Каталог одной категории.
+ *
+ * Плашки не описаны вручную: они собираются из `modelSlug` тех позиций, что
+ * реально пришли из прайс-листов, поэтому новая модель появляется сама.
+ */
+export async function getCategoryCatalog(slug: string): Promise<CategoryCatalog | null> {
+  const category = categoryIdBySlug(slug);
+  if (!category) return null;
+
+  const { listings, demoData } = await getPublicCatalog();
+  const scoped = listings.filter((listing) => listing.category === category);
+
+  return {
+    category,
+    categorySlug: toCategorySlug(category),
+    models: buildModelGroups(scoped),
+    listings: scoped,
+    demoData,
+  };
+}
+
+export interface ModelCatalog {
+  category: CategoryId;
+  categorySlug: string;
+  model: CatalogModelGroup;
+  /** Позиции только этой модели. */
+  listings: CatalogListing[];
+  demoData: boolean;
+}
+
+/** Каталог одной модели: `/catalog/iphone/iphone-17-pro-max`. */
+export async function getModelCatalog(
+  categorySlugValue: string,
+  modelSlug: string,
+): Promise<ModelCatalog | null> {
+  const category = await getCategoryCatalog(categorySlugValue);
+  if (!category) return null;
+
+  const model = category.models.find((group) => group.modelSlug === modelSlug);
+  if (!model) return null;
+
+  return {
+    category: category.category,
+    categorySlug: category.categorySlug,
+    model,
+    listings: category.listings.filter((listing) => listing.modelSlug === modelSlug),
+    demoData: category.demoData,
+  };
+}
+
+/** Параметры для предгенерации страниц моделей — их же требует статический экспорт. */
+export async function getModelRouteParams(): Promise<{ category: string; model: string }[]> {
+  const { listings } = await getPublicCatalog();
+
+  return buildModelGroups(listings).map((group) => ({
+    category: group.categorySlug,
+    model: group.modelSlug,
+  }));
+}
+
 export async function getListingBySlug(slug: string): Promise<CatalogListing | null> {
   const { listings } = await getPublicCatalog();
   return listings.find((listing) => listing.slug === slug) ?? null;
@@ -122,7 +202,10 @@ export async function getRelatedListings(
     (candidate) => candidate.model === listing.model && candidate.slug !== listing.slug,
   );
   const otherModels = listings.filter(
-    (candidate) => candidate.model !== listing.model && candidate.availability === 'in_stock',
+    (candidate) => candidate.model !== listing.model
+      // Похожее должно оставаться в той же категории: к часам не предлагаем телефон.
+      && candidate.category === listing.category
+      && candidate.availability === 'in_stock',
   );
 
   return [...sameModel, ...otherModels].slice(0, limit);

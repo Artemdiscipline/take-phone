@@ -1,15 +1,17 @@
 import {
   buildMatchKey,
+  buildModelSlug,
   canonicalColor,
+  canonicalConfiguration,
   parseAvailability,
-  parseIphoneModel,
+  parseCaseSize,
+  parseDeviceModel,
   parseMemory,
   parsePrice,
   parseSim,
 } from '@/lib/catalog/normalize';
 import type {
   Availability,
-  CategoryId,
   RawOffer,
   SourceId,
   SourceOffer,
@@ -67,8 +69,6 @@ export abstract class BaseSourceAdapter implements SourceAdapter {
   abstract readonly id: SourceId;
   abstract readonly displayName: string;
   abstract readonly siteUrl: string;
-  /** Category the source is currently mapped for. */
-  protected readonly category: CategoryId = 'iphone';
   protected readonly city = 'Тюмень';
 
   private lastStatus: SyncSourceResult | null = null;
@@ -152,22 +152,35 @@ export abstract class BaseSourceAdapter implements SourceAdapter {
   }
 
   normalizeProduct(raw: RawOffer): SourceOffer | null {
-    const parsed = parseIphoneModel(raw.title);
+    const parsed = parseDeviceModel(raw.title);
     if (!parsed) return null;
 
+    const caseSize = parseCaseSize(raw.caseSize ?? (parsed.category === 'watch' ? raw.title : undefined));
     const memory = parseMemory(raw.memory ?? raw.title);
-    if (!memory) return null;
+
+    // Телефон без объёма памяти — это неразобранная строка прайса. У часов
+    // памяти нет вовсе, но обязателен размер корпуса: без него варианты
+    // «40 мм» и «44 мм» слились бы в один.
+    if (parsed.category === 'watch') {
+      if (!caseSize) return null;
+    } else if (!memory) {
+      return null;
+    }
 
     const color = canonicalColor(raw.color ?? extractColor(raw.title));
     const sim = parseSim(raw.sim, raw.title);
+    const configuration = canonicalConfiguration(raw.configuration);
     const brand = 'Apple';
+    const normalizedMemory = parsed.category === 'watch' ? 0 : memory;
 
     const matchKey = buildMatchKey({
       brand,
       model: parsed.model,
-      memory,
+      memory: normalizedMemory,
       color,
       sim,
+      caseSize,
+      configuration,
     });
 
     return {
@@ -176,11 +189,14 @@ export abstract class BaseSourceAdapter implements SourceAdapter {
       source: this.id,
       brand,
       model: parsed.model,
+      modelSlug: buildModelSlug(parsed.model),
       generation: parsed.generation,
-      memory,
+      memory: normalizedMemory,
       color,
       sim,
-      category: this.category,
+      caseSize,
+      configuration,
+      category: parsed.category,
       images: this.getImages(raw),
       purchasePrice: this.getPrice(raw),
       oldPrice: raw.oldPrice ? parsePrice(raw.oldPrice) : undefined,
@@ -211,8 +227,13 @@ export abstract class BaseSourceAdapter implements SourceAdapter {
 }
 
 const COLOR_TOKENS = [
-  'Deep Blue', 'Cosmic Orange', 'Silver', 'Lavender', 'Mist Blue', 'Sage',
-  'White', 'Black', 'Sky Blue', 'Cloud White', 'Light Gold', 'Space Black',
+  // Составные названия идут первыми: иначе «Space Black» распознался бы как «Black».
+  'Deep Blue', 'Cosmic Orange', 'Mist Blue', 'Sky Blue', 'Cloud White',
+  'Light Gold', 'Space Black', 'Natural Titanium', 'Black Titanium',
+  'Jet Black', 'Rose Gold', 'Slate Gray', 'Black Titanium', 'Natural Titanium',
+  'Desert Titanium', 'White Titanium',
+  'Lavender', 'Sage', 'Midnight', 'Starlight', 'Ultramarine', 'Teal', 'Pink',
+  'Silver', 'White', 'Black',
 ];
 
 function extractColor(title: string): string | undefined {

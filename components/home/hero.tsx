@@ -46,7 +46,7 @@ export function Hero({ featured }: { featured: CatalogListing | null }) {
 
           <div className="mt-8 flex flex-col gap-2.5 sm:flex-row">
             <AppLink
-              href="/catalog"
+              href="/catalog/iphone"
               className="group inline-flex h-12 items-center justify-center gap-2.5 rounded-xl bg-plum px-6 text-sm font-medium text-white transition hover:bg-plum-soft"
             >
               Смотреть каталог
