@@ -23,6 +23,7 @@ import {
 import { useRequest } from '@/components/order/request-store';
 import { isStaticPreview } from '@/lib/build-mode';
 import { site } from '@/lib/site';
+import { Logo } from './logo';
 import { categories, mainNav } from './nav-data';
 import { AppLink, useNavigate } from '@/components/site/app-link';
 
@@ -84,11 +85,12 @@ export function Header() {
       </div>
 
       <div className="shell flex h-[68px] items-center gap-4">
+        {/*
+          Надпись в логотипе набрана в две строки, поэтому мелкий размер её
+          «съедает». Город не дублируем — он уже есть в верхней строке.
+        */}
         <AppLink href="/" className="shrink-0 leading-none" aria-label="Take Phone — на главную">
-          <span className="block text-[17px] font-semibold tracking-[-0.03em]">TAKE PHONE</span>
-          <span className="mt-1 block text-[10px] font-medium uppercase tracking-[0.2em] text-ink-faint">
-            Техника · {site.city}
-          </span>
+          <Logo variant="full" className="h-9 sm:h-10" priority />
         </AppLink>
 
         <button
@@ -191,7 +193,10 @@ export function Header() {
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
         <SheetContent side="left" className="w-[86%] gap-0 border-line bg-paper p-0 text-ink sm:max-w-[360px]">
           <SheetHeader className="border-b border-line p-6">
-            <SheetTitle className="text-lg font-semibold tracking-[-0.02em]">TAKE PHONE</SheetTitle>
+            <SheetTitle className="flex">
+              <Logo variant="full" className="h-6" />
+              <span className="sr-only">Take Phone</span>
+            </SheetTitle>
             <SheetDescription>Магазин техники в Тюмени</SheetDescription>
           </SheetHeader>
 

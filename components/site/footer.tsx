@@ -1,5 +1,6 @@
 import { isStaticPreview } from '@/lib/build-mode';
 import { site } from '@/lib/site';
+import { Logo } from './logo';
 import { categories, mainNav } from './nav-data';
 import { AppLink } from '@/components/site/app-link';
 
@@ -8,7 +9,7 @@ export function Footer() {
     <footer className="border-t border-line bg-surface">
       <div className="shell grid gap-10 py-14 md:grid-cols-[1.2fr_1fr_1fr_1.1fr]">
         <div>
-          <span className="block text-[17px] font-semibold tracking-[-0.03em]">TAKE PHONE</span>
+          <Logo variant="full" className="h-7" />
           <p className="mt-3 max-w-[260px] text-sm text-ink-soft">
             Магазин техники в Тюмени. Актуальные цены и наличие, гарантия до 5 лет
             и собственный сервис.

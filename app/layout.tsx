@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   description,
   applicationName: site.name,
   keywords: ['iPhone Тюмень', 'купить айфон Тюмень', 'Take Phone', 'техника Тюмень', 'trade-in Тюмень'],
-  icons: { icon: withBase('/favicon.svg') },
+  icons: { icon: withBase('/favicon.png') },
   openGraph: {
     type: 'website',
     locale: 'ru_RU',
