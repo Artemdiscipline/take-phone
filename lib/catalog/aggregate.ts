@@ -13,6 +13,8 @@ import {
   resolveMarkup,
 } from './pricing';
 import type {
+  Availability,
+  CatalogListing,
   CatalogProduct,
   MarkupRules,
   SourceOffer,
@@ -145,4 +147,95 @@ function compareProducts(a: StaffProductView, b: StaffProductView): number {
 /** Everything the browser is allowed to see. */
 export function toPublicProducts(views: StaffProductView[]): CatalogProduct[] {
   return views.map((view) => view.product);
+}
+
+/**
+ * Собирает публичные позиции каталога из вариантов.
+ *
+ * Ключ позиции — slug (модель + память + цвет). Варианты внутри различаются
+ * типом SIM: именно из-за них в каталоге раньше появлялись пары одинаковых
+ * на вид карточек с общим адресом.
+ */
+export function buildListings(views: StaffProductView[]): CatalogListing[] {
+  const groups = new Map<string, CatalogProduct[]>();
+
+  for (const view of views) {
+    const group = groups.get(view.product.slug);
+    if (group) group.push(view.product);
+    else groups.set(view.product.slug, [view.product]);
+  }
+
+  const listings: CatalogListing[] = [];
+
+  for (const [slug, group] of groups) {
+    const variants = [...group].sort(compareVariants);
+    const reference = variants[0];
+    const available = variants.filter((variant) => variant.availability !== 'out_of_stock');
+    const priced = available.length > 0 ? available : variants;
+
+    listings.push({
+      id: slug,
+      slug,
+      brand: reference.brand,
+      model: reference.model,
+      generation: reference.generation,
+      memory: reference.memory,
+      memoryLabel: reference.memoryLabel,
+      color: reference.color,
+      colorHex: reference.colorHex,
+      category: reference.category,
+      title: reference.title,
+      images: reference.images,
+      variants,
+      defaultVariantId: reference.id,
+      price: Math.min(...priced.map((variant) => variant.price)),
+      oldPrice: pickListingOldPrice(priced),
+      availability: bestAvailability(variants),
+      hasSimChoice: variants.length > 1,
+      city: reference.city,
+      updatedAt: variants.map((variant) => variant.updatedAt).sort().at(-1) ?? reference.updatedAt,
+    });
+  }
+
+  return listings.sort(compareListings);
+}
+
+/** Доступные и более дешёвые варианты идут первыми — такой и показывается. */
+function compareVariants(a: CatalogProduct, b: CatalogProduct): number {
+  const rank = (product: CatalogProduct) =>
+    product.availability === 'in_stock' ? 0 : product.availability === 'to_order' ? 1 : 2;
+
+  const byAvailability = rank(a) - rank(b);
+  if (byAvailability !== 0) return byAvailability;
+
+  return a.price - b.price;
+}
+
+function bestAvailability(variants: CatalogProduct[]): Availability {
+  if (variants.some((variant) => variant.availability === 'in_stock')) return 'in_stock';
+  if (variants.some((variant) => variant.availability === 'to_order')) return 'to_order';
+  return 'out_of_stock';
+}
+
+function pickListingOldPrice(variants: CatalogProduct[]): number | undefined {
+  const cheapest = variants.reduce((best, variant) => variant.price < best.price ? variant : best);
+  return cheapest.oldPrice;
+}
+
+function compareListings(a: CatalogListing, b: CatalogListing): number {
+  const rank = (listing: CatalogListing) =>
+    listing.availability === 'in_stock' ? 0 : listing.availability === 'to_order' ? 1 : 2;
+
+  const byAvailability = rank(a) - rank(b);
+  if (byAvailability !== 0) return byAvailability;
+
+  const generationRank = (value: string) => {
+    const index = GENERATION_ORDER.indexOf(value);
+    return index === -1 ? GENERATION_ORDER.length : index;
+  };
+
+  const byGeneration = generationRank(a.generation) - generationRank(b.generation);
+  if (byGeneration !== 0) return byGeneration;
+
+  return a.price - b.price;
 }

@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { AppLink } from '@/components/site/app-link';
 
 import { ProductDetail } from '@/components/product/product-detail';
+import { AppLink } from '@/components/site/app-link';
 import { AVAILABILITY_LABELS, colorRu } from '@/lib/catalog/normalize';
 import {
-  getModelVariants,
-  getProductBySlug,
+  getListingBySlug,
+  getModelListings,
   getPublicCatalog,
-  getRelatedProducts,
+  getRelatedListings,
 } from '@/lib/server/catalog-service';
 
 // ISR: на Workers список обновляется раз в минуту, при статическом экспорте
@@ -17,8 +17,8 @@ export const revalidate = 60;
 
 /** Список карточек для предгенерации — он же нужен статическому экспорту. */
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  const { products } = await getPublicCatalog();
-  return products.map((product) => ({ slug: product.slug }));
+  const { listings } = await getPublicCatalog();
+  return listings.map((listing) => ({ slug: listing.slug }));
 }
 
 export async function generateMetadata({
@@ -27,23 +27,27 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const listing = await getListingBySlug(slug);
 
-  if (!product) return { title: 'Устройство не найдено' };
+  if (!listing) return { title: 'Устройство не найдено' };
 
-  const color = colorRu(product.color) ?? product.color;
+  const color = colorRu(listing.color) ?? listing.color;
+  const sim = listing.hasSimChoice
+    ? 'на выбор eSIM или две nano-SIM'
+    : listing.variants[0].simLabel;
+
   const description =
-    `${product.title} в Тюмени — ${AVAILABILITY_LABELS[product.availability].toLowerCase()}. `
-    + `Память ${product.memoryLabel}, цвет ${color}, ${product.simLabel}. `
+    `${listing.title} в Тюмени — ${AVAILABILITY_LABELS[listing.availability].toLowerCase()}. `
+    + `Память ${listing.memoryLabel}, цвет ${color}, ${sim}. `
     + 'Гарантия до 5 лет, самовывоз и доставка.';
 
   return {
-    title: product.title,
+    title: listing.title,
     description,
     openGraph: {
-      title: `${product.title} — Take Phone`,
+      title: `${listing.title} — Take Phone`,
       description,
-      images: [{ url: product.images[0] }],
+      images: [{ url: listing.images[0] }],
     },
   };
 }
@@ -54,13 +58,13 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const listing = await getListingBySlug(slug);
 
-  if (!product) notFound();
+  if (!listing) notFound();
 
-  const [variants, related] = await Promise.all([
-    getModelVariants(product),
-    getRelatedProducts(product),
+  const [modelListings, related] = await Promise.all([
+    getModelListings(listing),
+    getRelatedListings(listing),
   ]);
 
   return (
@@ -70,10 +74,10 @@ export default async function ProductPage({
         <span className="mx-2">/</span>
         <AppLink href="/catalog" className="transition hover:text-accent">Каталог iPhone</AppLink>
         <span className="mx-2">/</span>
-        <span className="text-ink-soft">{product.model}</span>
+        <span className="text-ink-soft">{listing.model}</span>
       </nav>
 
-      <ProductDetail product={product} variants={variants} related={related} />
+      <ProductDetail listing={listing} modelListings={modelListings} related={related} />
 
       <script
         type="application/ld+json"
@@ -81,16 +85,16 @@ export default async function ProductPage({
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'Product',
-            name: product.title,
-            brand: { '@type': 'Brand', name: product.brand },
-            image: product.images,
+            name: listing.title,
+            brand: { '@type': 'Brand', name: listing.brand },
+            image: listing.images,
             offers: {
               '@type': 'Offer',
               priceCurrency: 'RUB',
-              price: product.price,
-              availability: product.availability === 'in_stock'
+              price: listing.price,
+              availability: listing.availability === 'in_stock'
                 ? 'https://schema.org/InStock'
-                : product.availability === 'to_order'
+                : listing.availability === 'to_order'
                   ? 'https://schema.org/PreOrder'
                   : 'https://schema.org/OutOfStock',
             },

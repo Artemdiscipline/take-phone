@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
-import { AppLink } from '@/components/site/app-link';
 
 import { CatalogBrowser } from '@/components/catalog/catalog-browser';
+import { AppLink } from '@/components/site/app-link';
 import { getPublicCatalog } from '@/lib/server/catalog-service';
 
 // ISR: на Workers список обновляется раз в минуту, при статическом экспорте
@@ -20,7 +20,7 @@ export default async function CatalogPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  const [{ products }, params] = await Promise.all([
+  const [{ listings, demoData }, params] = await Promise.all([
     getPublicCatalog(),
     searchParams,
   ]);
@@ -33,17 +33,19 @@ export default async function CatalogPage({
         <span className="text-ink-soft">Каталог iPhone</span>
       </nav>
 
-      <header className="mb-7 mt-4 flex flex-col justify-between gap-3 md:flex-row md:items-end">
-        <div>
-          <h1 className="h2">Каталог iPhone</h1>
-          <p className="lede mt-2 max-w-[560px]">
-            Цена и наличие обновляются автоматически. Заявка ни к чему не обязывает —
-            менеджер подтвердит всё до оплаты.
-          </p>
-        </div>
+      <header className="mb-7 mt-4">
+        <h1 className="h2">Каталог iPhone</h1>
+        <p className="lede mt-2 max-w-[560px]">
+          Цена и наличие обновляются автоматически. Заявка ни к чему не обязывает —
+          менеджер подтвердит всё до оплаты.
+        </p>
       </header>
 
-      <CatalogBrowser initialProducts={products} initialQuery={params.q ?? ''} />
+      <CatalogBrowser
+        initialListings={listings}
+        initialQuery={params.q ?? ''}
+        demoData={demoData}
+      />
     </div>
   );
 }

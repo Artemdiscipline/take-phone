@@ -20,12 +20,13 @@ export function Footer() {
           <ul className="mt-4 space-y-2.5 text-sm">
             {categories.slice(0, 5).map((category) => (
               <li key={category.id}>
-                <AppLink
-                  href={category.href}
-                  className={category.ready ? 'transition hover:text-accent' : 'text-ink-faint'}
-                >
-                  {category.label}
-                </AppLink>
+                {category.href
+                  ? (
+                    <AppLink href={category.href} className="transition hover:text-accent">
+                      {category.label}
+                    </AppLink>
+                  )
+                  : <span className="text-ink-faint">{category.label}</span>}
               </li>
             ))}
           </ul>
@@ -41,6 +42,11 @@ export function Footer() {
                 </AppLink>
               </li>
             ))}
+            <li>
+              <AppLink href="/privacy" className="transition hover:text-accent">
+                Обработка данных
+              </AppLink>
+            </li>
             {!isStaticPreview && (
               <li>
                 <AppLink href="/staff" className="text-ink-faint transition hover:text-accent">
@@ -62,8 +68,8 @@ export function Footer() {
             <li className="text-ink-soft">{site.addressFull}</li>
             <li className="text-ink-soft">{site.workingHours}</li>
             <li className="flex gap-4 pt-1">
-              <a href={site.telegram} target="_blank" rel="noreferrer" className="transition hover:text-accent">
-                Telegram
+              <a href={site.telegramChannel} target="_blank" rel="noreferrer" className="transition hover:text-accent">
+                Telegram-канал
               </a>
               <a href={site.vk} target="_blank" rel="noreferrer" className="transition hover:text-accent">
                 ВКонтакте

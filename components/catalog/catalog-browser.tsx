@@ -12,7 +12,7 @@ import {
 
 import { isStaticPreview } from '@/lib/build-mode';
 import { colorRu } from '@/lib/catalog/normalize';
-import type { CatalogProduct } from '@/lib/catalog/types';
+import type { CatalogListing } from '@/lib/catalog/types';
 import { formatFreshness } from '@/lib/format';
 import { ProductCard } from './product-card';
 import { ProductGridSkeleton } from './product-skeleton';
@@ -38,23 +38,26 @@ const EMPTY_FILTERS: Filters = {
 };
 
 export function CatalogBrowser({
-  initialProducts,
+  initialListings,
   initialQuery = '',
+  demoData = false,
 }: {
-  initialProducts: CatalogProduct[];
+  initialListings: CatalogListing[];
   initialQuery?: string;
+  /** Каталог собран из демонстрационного набора — говорим об этом честно. */
+  demoData?: boolean;
 }) {
-  const [products, setProducts] = useState(initialProducts);
-  const [serverProducts, setServerProducts] = useState(initialProducts);
+  const [listings, setListings] = useState(initialListings);
+  const [serverListings, setServerListings] = useState(initialListings);
   const [filters, setFilters] = useState<Filters>({ ...EMPTY_FILTERS, query: initialQuery });
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // A server re-render (navigation or router.refresh) wins over the last client
-  // fetch. Adjusting during render avoids an extra pass through the effect queue.
-  if (serverProducts !== initialProducts) {
-    setServerProducts(initialProducts);
-    setProducts(initialProducts);
+  // Рендер с сервера важнее последнего клиентского запроса. Правка во время
+  // рендера избавляет от лишнего прохода через очередь эффектов.
+  if (serverListings !== initialListings) {
+    setServerListings(initialListings);
+    setListings(initialListings);
   }
 
   const refresh = useCallback(async () => {
@@ -64,10 +67,10 @@ export function CatalogBrowser({
       const response = await fetch('/api/catalog', { cache: 'no-store' });
       if (!response.ok) throw new Error('bad status');
 
-      const payload = await response.json() as { products?: CatalogProduct[] };
-      if (!Array.isArray(payload.products)) throw new Error('bad payload');
+      const payload = await response.json() as { listings?: CatalogListing[] };
+      if (!Array.isArray(payload.listings)) throw new Error('bad payload');
 
-      setProducts(payload.products);
+      setListings(payload.listings);
       setStatus('idle');
     } catch {
       setStatus('error');
@@ -75,28 +78,28 @@ export function CatalogBrowser({
   }, []);
 
   const options = useMemo(() => ({
-    generations: unique(products.map((product) => product.generation)),
-    memories: unique(products.map((product) => String(product.memory)))
+    generations: unique(listings.map((listing) => listing.generation)),
+    memories: unique(listings.map((listing) => String(listing.memory)))
       .sort((a, b) => Number(a) - Number(b)),
-    colors: unique(products.map((product) => product.color)),
-  }), [products]);
+    colors: unique(listings.map((listing) => listing.color)),
+  }), [listings]);
 
   const visible = useMemo(() => {
     const query = filters.query.trim().toLowerCase();
 
-    const result = products.filter((product) => {
-      if (filters.generation !== 'all' && product.generation !== filters.generation) return false;
-      if (filters.memory !== 'all' && String(product.memory) !== filters.memory) return false;
-      if (filters.color !== 'all' && product.color !== filters.color) return false;
-      if (filters.onlyAvailable && product.availability !== 'in_stock') return false;
+    const result = listings.filter((listing) => {
+      if (filters.generation !== 'all' && listing.generation !== filters.generation) return false;
+      if (filters.memory !== 'all' && String(listing.memory) !== filters.memory) return false;
+      if (filters.color !== 'all' && listing.color !== filters.color) return false;
+      if (filters.onlyAvailable && listing.availability !== 'in_stock') return false;
 
       if (query) {
         const haystack = [
-          product.title,
-          product.model,
-          product.memoryLabel,
-          product.color,
-          colorRu(product.color) ?? '',
+          listing.title,
+          listing.model,
+          listing.memoryLabel,
+          listing.color,
+          colorRu(listing.color) ?? '',
         ].join(' ').toLowerCase();
         if (!haystack.includes(query)) return false;
       }
@@ -107,10 +110,10 @@ export function CatalogBrowser({
     if (filters.sort === 'price-asc') return [...result].sort((a, b) => a.price - b.price);
     if (filters.sort === 'price-desc') return [...result].sort((a, b) => b.price - a.price);
     return result;
-  }, [products, filters]);
+  }, [listings, filters]);
 
   const activeCount = countActive(filters);
-  const lastUpdate = products.map((product) => product.updatedAt).sort().at(-1);
+  const lastUpdate = listings.map((listing) => listing.updatedAt).sort().at(-1);
 
   const update = <K extends keyof Filters>(key: K, value: Filters[K]) =>
     setFilters((current) => ({ ...current, [key]: value }));
@@ -124,7 +127,7 @@ export function CatalogBrowser({
             <input
               value={filters.query}
               onChange={(event) => update('query', event.target.value)}
-              className="w-full bg-transparent text-sm outline-none placeholder:text-ink-faint"
+              className="w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-ink-faint"
               placeholder="Модель, память или цвет"
               aria-label="Поиск по каталогу"
               type="search"
@@ -212,13 +215,23 @@ export function CatalogBrowser({
         )}
       </div>
 
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <p className="text-sm text-ink-soft">
           {visible.length > 0
             ? `${visible.length} ${plural(visible.length, 'позиция', 'позиции', 'позиций')}`
             : 'Ничего не найдено'}
           {lastUpdate && (
-            <span className="text-ink-faint"> · обновлено {formatFreshness(lastUpdate, isStaticPreview)}</span>
+            <span className="text-ink-faint">
+              {' '}· обновлено {formatFreshness(lastUpdate, isStaticPreview)}
+            </span>
+          )}
+          {demoData && (
+            <span
+              className="ml-2 inline-flex items-center rounded-full bg-surface-2 px-2 py-0.5 text-[11px] text-ink-faint"
+              title="В демоверсии показана механика автоматического обновления каталога"
+            >
+              Демонстрационные данные
+            </span>
           )}
         </p>
 
@@ -253,13 +266,13 @@ export function CatalogBrowser({
       )}
 
       <div className="mt-4">
-        {status === 'loading' && products.length === 0
+        {status === 'loading' && listings.length === 0
           ? <ProductGridSkeleton count={8} />
           : visible.length > 0
             ? (
               <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-                {visible.map((product, index) => (
-                  <ProductCard key={product.id} product={product} priority={index < 4} />
+                {visible.map((listing, index) => (
+                  <ProductCard key={listing.id} listing={listing} priority={index < 4} />
                 ))}
               </div>
             )

@@ -3,10 +3,11 @@ import { getPublicCatalog } from '@/lib/server/catalog-service';
 export const dynamic = 'force-dynamic';
 
 /**
- * Public catalogue endpoint.
+ * Публичный каталог.
  *
- * Returns only `CatalogProduct` records — wholesale prices and source names are
- * never part of this payload.
+ * Отдаёт только позиции витрины. Названия поставщиков, закупочные цены и
+ * ссылки на исходные карточки в этот ответ не попадают никогда — они живут
+ * в `StaffProductView` и доступны лишь из `/api/staff/*`.
  */
 export async function GET(): Promise<Response> {
   try {
@@ -16,9 +17,6 @@ export async function GET(): Promise<Response> {
       headers: { 'Cache-Control': 'public, max-age=0, s-maxage=60' },
     });
   } catch {
-    return Response.json(
-      { error: 'Не удалось загрузить каталог' },
-      { status: 503 },
-    );
+    return Response.json({ error: 'Не удалось загрузить каталог' }, { status: 503 });
   }
 }

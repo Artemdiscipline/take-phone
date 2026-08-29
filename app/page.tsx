@@ -15,10 +15,10 @@ import { site } from '@/lib/site';
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const { products } = await getPublicCatalog();
+  const { listings } = await getPublicCatalog();
 
-  const inStock = products.filter((product) => product.availability === 'in_stock');
-  const featured = inStock.find((product) => product.generation === 'Pro Max') ?? inStock[0] ?? null;
+  const inStock = listings.filter((listing) => listing.availability === 'in_stock');
+  const featured = inStock.find((listing) => listing.generation === 'Pro Max') ?? inStock[0] ?? null;
   const highlights = inStock.slice(0, 8);
 
   return (
@@ -26,14 +26,14 @@ export default async function HomePage() {
       <Hero featured={featured} />
       <TrustStrip />
       <Categories />
-      <FeaturedProducts products={highlights} />
+      <FeaturedProducts listings={highlights} />
       <HowItWorks />
       <ServicePromo />
       <ContactsBlock />
 
       <script
         type="application/ld+json"
-        // Structured data for local search results.
+        // Разметка для локального поиска.
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             '@context': 'https://schema.org',

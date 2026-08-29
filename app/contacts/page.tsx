@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Clock3, MapPin, MessageCircle, Phone } from 'lucide-react';
+import { Clock3, MapPin, MessageCircle, Phone, Send } from 'lucide-react';
 import { AppLink } from '@/components/site/app-link';
 
 import { site } from '@/lib/site';
@@ -36,10 +36,20 @@ export default function ContactsPage() {
                 {site.phone}
               </a>
             </Row>
-            <Row icon={<MessageCircle className="size-4" aria-hidden />} term="Мессенджеры">
+            <Row icon={<MessageCircle className="size-4" aria-hidden />} term="Менеджер">
+              <a
+                href={site.telegramManager}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-accent"
+              >
+                Написать в Telegram — {site.telegramManagerHandle}
+              </a>
+            </Row>
+            <Row icon={<Send className="size-4" aria-hidden />} term="Мы в сети">
               <span className="flex flex-wrap gap-4">
-                <a href={site.telegram} target="_blank" rel="noreferrer" className="font-medium text-accent">
-                  Telegram
+                <a href={site.telegramChannel} target="_blank" rel="noreferrer" className="font-medium text-accent">
+                  Telegram-канал
                 </a>
                 <a href={site.vk} target="_blank" rel="noreferrer" className="font-medium text-accent">
                   ВКонтакте

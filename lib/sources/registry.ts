@@ -36,3 +36,10 @@ export const SOURCE_LABELS: Record<SourceId, string> = {
   'ice-apple': 'IceApple',
   phone24: 'Phone24',
 };
+
+/** Адреса источников. Тоже закрытые данные — только для панели сотрудника. */
+export const SOURCE_URLS: Record<SourceId, string> = {
+  'first-apple': 'https://first-apple72.ru/',
+  'ice-apple': 'https://iceapple.ru/',
+  phone24: 'https://phone24.ru/',
+};

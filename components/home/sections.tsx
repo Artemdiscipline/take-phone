@@ -20,7 +20,7 @@ import { ProductCard } from '@/components/catalog/product-card';
 import { Reveal } from '@/components/site/reveal';
 import { categories } from '@/components/site/nav-data';
 import { CATEGORY_IMAGES } from '@/lib/catalog/images';
-import type { CatalogProduct, CategoryId } from '@/lib/catalog/types';
+import type { CatalogListing, CategoryId } from '@/lib/catalog/types';
 import { site } from '@/lib/site';
 import { AppLink } from '@/components/site/app-link';
 import { withBase } from '@/lib/build-mode';
@@ -71,50 +71,69 @@ export function Categories() {
         {categories.map((category, index) => {
           const image = CATEGORY_IMAGES[category.id];
 
+          const inner = (
+            <>
+              <div className="relative h-24 w-full sm:h-28">
+                {image
+                  ? (
+                    <Image
+                      src={withBase(image)}
+                      alt=""
+                      fill
+                      sizes="(max-width: 640px) 45vw, 260px"
+                      loading="lazy"
+                      className={`object-contain transition duration-500 ${
+                        category.href ? 'group-hover:scale-105' : 'opacity-45 saturate-0'
+                      }`}
+                    />
+                  )
+                  : (
+                    <span className="grid h-full place-items-center">
+                      <CategoryIcon id={category.id} />
+                    </span>
+                  )}
+              </div>
+
+              <div className="mt-4 flex items-end justify-between gap-2">
+                <div>
+                  <p className={`text-[15px] font-medium ${category.href ? '' : 'text-ink-faint'}`}>
+                    {category.label}
+                  </p>
+                  <p className="mt-0.5 text-[12px] text-ink-faint">{category.note}</p>
+                </div>
+                {category.href && (
+                  <ChevronRight
+                    className="size-4 text-ink-faint transition group-hover:translate-x-0.5"
+                    aria-hidden
+                  />
+                )}
+              </div>
+            </>
+          );
+
           return (
             <Reveal key={category.id} delay={Math.min(index * 60, 240)}>
-              <AppLink
-                href={category.href}
-                aria-disabled={!category.ready}
-                className={`group flex h-full flex-col justify-between rounded-2xl border p-4 transition sm:p-5 ${
-                  category.ready
-                    ? 'border-line bg-paper hover:border-line-strong hover:shadow-[0_18px_44px_-28px_rgba(38,20,46,0.45)]'
-                    : 'border-transparent bg-surface'
-                }`}
-              >
-                <div className="relative h-24 w-full sm:h-28">
-                  {image
-                    ? (
-                      <Image
-                        src={withBase(image)}
-                        alt=""
-                        fill
-                        sizes="(max-width: 640px) 45vw, 260px"
-                        loading="lazy"
-                        className={`object-contain transition duration-500 ${
-                          category.ready ? 'group-hover:scale-105' : 'opacity-45 saturate-0'
-                        }`}
-                      />
-                    )
-                    : (
-                      <span className="grid h-full place-items-center">
-                        <CategoryIcon id={category.id} />
-                      </span>
-                    )}
-                </div>
-
-                <div className="mt-4 flex items-end justify-between gap-2">
-                  <div>
-                    <p className={`text-[15px] font-medium ${category.ready ? '' : 'text-ink-faint'}`}>
-                      {category.label}
-                    </p>
-                    <p className="mt-0.5 text-[12px] text-ink-faint">{category.note}</p>
+              {/*
+                Неготовая категория — не ссылка: иначе «Mac» вёл бы в каталог
+                iPhone, а это обман ожидания.
+              */}
+              {category.href
+                ? (
+                  <AppLink
+                    href={category.href}
+                    className="group flex h-full flex-col justify-between rounded-2xl border border-line bg-paper p-4 transition hover:border-line-strong hover:shadow-[0_18px_44px_-28px_rgba(38,20,46,0.45)] sm:p-5"
+                  >
+                    {inner}
+                  </AppLink>
+                )
+                : (
+                  <div
+                    aria-label={`${category.label} — ${category.note.toLowerCase()}`}
+                    className="flex h-full flex-col justify-between rounded-2xl bg-surface p-4 sm:p-5"
+                  >
+                    {inner}
                   </div>
-                  {category.ready && (
-                    <ChevronRight className="size-4 text-ink-faint transition group-hover:translate-x-0.5" aria-hidden />
-                  )}
-                </div>
-              </AppLink>
+                )}
             </Reveal>
           );
         })}
@@ -129,8 +148,8 @@ function CategoryIcon({ id }: { id: CategoryId }) {
   return <Icon className="size-9 text-ink-faint/45" strokeWidth={1.2} aria-hidden />;
 }
 
-export function FeaturedProducts({ products }: { products: CatalogProduct[] }) {
-  if (products.length === 0) return null;
+export function FeaturedProducts({ listings }: { listings: CatalogListing[] }) {
+  if (listings.length === 0) return null;
 
   return (
     <section className="border-y border-line bg-surface py-14 lg:py-20">
@@ -152,9 +171,9 @@ export function FeaturedProducts({ products }: { products: CatalogProduct[] }) {
         </Reveal>
 
         <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          {products.map((product, index) => (
-            <Reveal key={product.id} delay={Math.min(index * 60, 240)}>
-              <ProductCard product={product} />
+          {listings.map((listing, index) => (
+            <Reveal key={listing.id} delay={Math.min(index * 60, 240)}>
+              <ProductCard listing={listing} />
             </Reveal>
           ))}
         </div>
@@ -289,13 +308,13 @@ export function ContactsBlock() {
 
             <div className="mt-8 flex flex-col gap-2.5 sm:flex-row">
               <a
-                href={site.telegram}
+                href={site.telegramManager}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-medium text-plum"
               >
                 <MessageCircle className="size-4" aria-hidden />
-                Написать в Telegram
+                Написать менеджеру
               </a>
               <a
                 href={site.phoneHref}

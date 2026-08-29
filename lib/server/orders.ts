@@ -1,13 +1,16 @@
-import { applyCardFee } from '@/lib/catalog/pricing';
+import { applyCardFee, cardFeeAmount } from '@/lib/catalog/pricing';
 import { env } from '@/lib/env';
 import { getRepository } from '@/lib/repositories';
 import type {
   DeliveryMethod,
   OrderItem,
   OrderRequest,
+  OrderStatus,
   PaymentMethod,
   StoredOrder,
 } from '@/lib/repositories/types';
+import { ORDER_STATUSES } from '@/lib/repositories/types';
+import { terms } from '@/lib/site';
 
 export interface ValidationResult {
   ok: boolean;
@@ -18,7 +21,10 @@ export interface ValidationResult {
 const DELIVERY: DeliveryMethod[] = ['pickup', 'delivery'];
 const PAYMENT: PaymentMethod[] = ['transfer', 'cash', 'card'];
 
-/** Server-side validation. The form mirrors these rules, but never replaces them. */
+/**
+ * Серверная валидация. Форма повторяет эти правила для удобства, но никогда
+ * их не заменяет.
+ */
 export function validateOrder(input: unknown): ValidationResult {
   const errors: Record<string, string> = {};
 
@@ -32,10 +38,12 @@ export function validateOrder(input: unknown): ValidationResult {
   const comment = typeof raw.comment === 'string' ? raw.comment.trim().slice(0, 600) : '';
 
   if (name.length < 2) errors.name = 'Укажите имя';
-  if (name.length > 80) errors.name = 'Слишком длинное имя';
+  else if (name.length > 80) errors.name = 'Слишком длинное имя';
 
   const digits = phone.replace(/\D/g, '');
-  if (digits.length < 10 || digits.length > 15) errors.phone = 'Укажите телефон в формате +7 999 000-00-00';
+  if (digits.length < 10 || digits.length > 15) {
+    errors.phone = 'Укажите телефон в формате +7 999 000-00-00';
+  }
 
   const delivery = DELIVERY.includes(raw.delivery as DeliveryMethod)
     ? (raw.delivery as DeliveryMethod)
@@ -47,9 +55,13 @@ export function validateOrder(input: unknown): ValidationResult {
     : null;
   if (!payment) errors.payment = 'Выберите способ оплаты';
 
+  if (raw.consent !== true) {
+    errors.consent = 'Отметьте согласие на обработку персональных данных';
+  }
+
   const items = parseItems(raw.items);
   if (items.length === 0) errors.items = 'Добавьте хотя бы одно устройство';
-  if (items.length > 20) errors.items = 'Слишком много позиций в заявке';
+  else if (items.length > 20) errors.items = 'Слишком много позиций в заявке';
 
   if (Object.keys(errors).length > 0) return { ok: false, errors };
 
@@ -74,104 +86,155 @@ function parseItems(value: unknown): OrderItem[] {
     if (typeof entry !== 'object' || entry === null) return [];
     const item = entry as Record<string, unknown>;
 
-    const matchKey = typeof item.matchKey === 'string' ? item.matchKey : '';
-    const title = typeof item.title === 'string' ? item.title.slice(0, 160) : '';
+    const text = (key: string, limit: number): string =>
+      typeof item[key] === 'string' ? (item[key] as string).slice(0, limit) : '';
+
+    const productKey = text('productKey', 200);
+    const title = text('title', 160);
     const price = typeof item.price === 'number' && Number.isFinite(item.price)
       ? Math.max(0, Math.round(item.price))
       : 0;
 
-    if (!matchKey || !title || price === 0) return [];
+    if (!productKey || !title || price === 0) return [];
+
+    const quantity = typeof item.quantity === 'number' && Number.isFinite(item.quantity)
+      ? Math.min(10, Math.max(1, Math.round(item.quantity)))
+      : 1;
 
     return [{
-      matchKey,
+      productKey,
+      productSlug: text('productSlug', 160),
       title,
-      memoryLabel: typeof item.memoryLabel === 'string' ? item.memoryLabel.slice(0, 24) : '',
-      color: typeof item.color === 'string' ? item.color.slice(0, 40) : '',
+      model: text('model', 80),
+      memory: typeof item.memory === 'number' && Number.isFinite(item.memory)
+        ? Math.max(0, Math.round(item.memory))
+        : 0,
+      memoryLabel: text('memoryLabel', 24),
+      color: text('color', 40),
+      simType: text('simType', 24) || 'unknown',
+      simLabel: text('simLabel', 40),
       price,
-      availability: typeof item.availability === 'string' ? item.availability.slice(0, 24) : 'unknown',
+      availability: text('availability', 24) || 'unknown',
+      quantity,
     }];
   });
 }
 
+export function isOrderStatus(value: unknown): value is OrderStatus {
+  return typeof value === 'string' && (ORDER_STATUSES as readonly string[]).includes(value);
+}
+
+/** Итоги заявки. Считаются на сервере — клиентским числам не доверяем. */
+export function summariseOrder(request: OrderRequest): {
+  subtotal: number;
+  cardFee: number;
+  total: number;
+  reservationPrepayment: number;
+} {
+  const subtotal = request.items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
+
+  const cardFee = request.payment === 'card' ? cardFeeAmount(subtotal) : 0;
+
+  return {
+    subtotal,
+    cardFee,
+    total: request.payment === 'card' ? applyCardFee(subtotal) : subtotal,
+    // Предоплата обсуждается только при самовывозе и пока не списывается.
+    reservationPrepayment: request.delivery === 'pickup' ? terms.reservationPrepayment : 0,
+  };
+}
+
 /**
- * Stores the request and forwards it to the shop.
+ * Сохраняет заявку и, если канал настроен, передаёт её в магазин.
  *
- * Without `ORDER_WEBHOOK_URL` or Telegram credentials nothing leaves the server:
- * the request is stored for the staff panel and reported as `demo`, so the UI
- * never claims a message was sent.
+ * Без `ORDER_WEBHOOK_URL` и Telegram-доступов заявка просто остаётся в базе и
+ * помечается как `stored` — интерфейс в этом случае не утверждает, что
+ * менеджеру что-то отправлено.
  */
 export async function submitOrder(request: OrderRequest): Promise<StoredOrder> {
-  const subtotal = request.items.reduce((sum, item) => sum + item.price, 0);
-  const total = request.payment === 'card' ? applyCardFee(subtotal) : subtotal;
+  const totals = summariseOrder(request);
+  const repository = await getRepository();
 
-  const delivered = await deliver(request, total);
-
-  return getRepository().createOrder({
+  const stored = await repository.createOrder({
     ...request,
-    subtotal,
-    total,
+    ...totals,
     status: 'new',
-    delivered,
+    staffComment: '',
+    delivered: 'stored',
   });
+
+  const delivered = await deliver(stored);
+
+  if (delivered !== 'stored') {
+    // Отметка канала не должна ронять уже сохранённую заявку.
+    await repository.updateOrder(stored.id, {}).catch(() => null);
+    return { ...stored, delivered };
+  }
+
+  return stored;
 }
 
-async function deliver(
-  request: OrderRequest,
-  total: number,
-): Promise<StoredOrder['delivered']> {
-  const summary = formatSummary(request, total);
+async function deliver(order: StoredOrder): Promise<StoredOrder['delivered']> {
+  const summary = formatSummary(order);
 
-  if (env.telegramBotToken && env.telegramChatId) {
-    const response = await fetch(
-      `https://api.telegram.org/bot${env.telegramBotToken}/sendMessage`,
-      {
+  try {
+    if (env.telegramBotToken && env.telegramChatId) {
+      const response = await fetch(
+        `https://api.telegram.org/bot${env.telegramBotToken}/sendMessage`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: env.telegramChatId,
+            text: summary,
+            parse_mode: 'HTML',
+          }),
+        },
+      );
+
+      return response.ok ? 'telegram' : 'stored';
+    }
+
+    if (env.orderWebhookUrl) {
+      const response = await fetch(env.orderWebhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: env.telegramChatId,
-          text: summary,
-          parse_mode: 'HTML',
-        }),
-      },
-    );
+        body: JSON.stringify({ order, summary }),
+      });
 
-    if (!response.ok) throw new Error('Не удалось отправить заявку в Telegram');
-    return 'telegram';
+      return response.ok ? 'webhook' : 'stored';
+    }
+  } catch {
+    // Заявка уже в базе — сотрудник увидит её в панели в любом случае.
   }
 
-  if (env.orderWebhookUrl) {
-    const response = await fetch(env.orderWebhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...request, total, summary }),
-    });
-
-    if (!response.ok) throw new Error('Не удалось передать заявку в CRM');
-    return 'webhook';
-  }
-
-  return 'demo';
+  return 'stored';
 }
 
-function formatSummary(request: OrderRequest, total: number): string {
-  const lines = request.items.map((item) => `• ${item.title} — ${item.price} ₽`);
+function formatSummary(order: StoredOrder): string {
+  const lines = order.items.map(
+    (item) => `• ${item.title} (${item.simLabel}) — ${item.price} ₽`,
+  );
 
   return [
-    '<b>Новая заявка Take Phone</b>',
-    `Имя: ${request.name}`,
-    `Телефон: ${request.phone}`,
-    `Получение: ${request.delivery === 'pickup' ? 'самовывоз' : 'доставка'}`,
-    `Оплата: ${paymentLabel(request.payment)}`,
-    request.comment ? `Комментарий: ${request.comment}` : null,
+    `<b>Заявка ${order.publicNumber}</b>`,
+    `Имя: ${order.name}`,
+    `Телефон: ${order.phone}`,
+    `Получение: ${order.delivery === 'pickup' ? 'самовывоз' : 'доставка'}`,
+    `Оплата: ${paymentLabel(order.payment)}`,
+    order.comment ? `Комментарий: ${order.comment}` : null,
     '',
     ...lines,
     '',
-    `Итого ориентировочно: ${total} ₽`,
+    `Итого ориентировочно: ${order.total} ₽`,
   ].filter(Boolean).join('\n');
 }
 
 function paymentLabel(payment: PaymentMethod): string {
-  if (payment === 'card') return 'банковская карта (+13,5%)';
+  if (payment === 'card') return 'банковская карта';
   if (payment === 'cash') return 'наличные';
   return 'перевод';
 }

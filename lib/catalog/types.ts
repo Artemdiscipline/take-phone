@@ -86,6 +86,42 @@ export interface CatalogProduct {
   offerCount: number;
 }
 
+/**
+ * Публичная позиция каталога: одна модель + память + цвет.
+ *
+ * Раньше каждый тип SIM был отдельной карточкой, и покупатель видел два
+ * внешне одинаковых товара с одинаковым адресом (buildSlug не учитывает SIM).
+ * Теперь варианты SIM собраны внутрь позиции, а выбор делается на странице
+ * товара — там же меняются цена и наличие.
+ */
+export interface CatalogListing {
+  id: string;
+  slug: string;
+  brand: string;
+  model: string;
+  generation: string;
+  memory: number;
+  memoryLabel: string;
+  color: string;
+  colorHex: string;
+  category: CategoryId;
+  title: string;
+  images: string[];
+  /** Варианты по типу SIM, от доступных и дешёвых к остальным. */
+  variants: CatalogProduct[];
+  /** Вариант, который показывается по умолчанию. */
+  defaultVariantId: string;
+  /** Минимальная цена среди доступных вариантов. */
+  price: number;
+  oldPrice?: number;
+  /** Лучший статус среди вариантов. */
+  availability: Availability;
+  /** true, когда у позиции больше одного типа SIM. */
+  hasSimChoice: boolean;
+  city: string;
+  updatedAt: string;
+}
+
 /** Everything the staff panel needs about one public product. */
 export interface StaffProductView {
   product: CatalogProduct;

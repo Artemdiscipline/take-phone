@@ -9,17 +9,28 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import type { CatalogProduct } from '@/lib/catalog/types';
+import type { CatalogListing, CatalogProduct } from '@/lib/catalog/types';
 
+/**
+ * Позиция заявки.
+ *
+ * Хранится развёрнуто: заявка должна оставаться читаемой, даже если товар
+ * исчез из каталога между добавлением и отправкой.
+ */
 export interface RequestItem {
-  matchKey: string;
-  slug: string;
+  productKey: string;
+  productSlug: string;
   title: string;
+  model: string;
+  memory: number;
   memoryLabel: string;
   color: string;
+  simType: string;
+  simLabel: string;
   image: string;
   price: number;
   availability: CatalogProduct['availability'];
+  quantity: number;
 }
 
 interface Snapshot {
@@ -27,7 +38,7 @@ interface Snapshot {
   favourites: string[];
 }
 
-/* --------------------------------------------------------- external store */
+/* --------------------------------------------------------- внешнее хранилище */
 
 const ITEMS_KEY = 'take-phone.request';
 const FAVOURITES_KEY = 'take-phone.favourites';
@@ -35,9 +46,9 @@ const FAVOURITES_KEY = 'take-phone.favourites';
 const EMPTY: Snapshot = { items: [], favourites: [] };
 
 /**
- * The request lives in `localStorage`, which makes it external state: the
- * server renders the empty snapshot, and the browser swaps in the stored one
- * through `useSyncExternalStore` instead of a post-hydration `setState`.
+ * Заявка живёт в `localStorage`, то есть это внешнее состояние: сервер
+ * отрисовывает пустой снимок, а браузер подставляет сохранённый через
+ * `useSyncExternalStore`, а не через setState после гидратации.
  */
 let snapshot: Snapshot = EMPTY;
 let restored = false;
@@ -48,7 +59,7 @@ function read<T>(key: string, fallback: T): T {
     const raw = window.localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as T) : fallback;
   } catch {
-    // Private mode or storage disabled — the request still works in-session.
+    // Приватный режим или отключённое хранилище — заявка работает в рамках сессии.
     return fallback;
   }
 }
@@ -57,7 +68,7 @@ function write(key: string, value: unknown): void {
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    // Ignored for the same reason.
+    // Игнорируем по той же причине.
   }
 }
 
@@ -65,11 +76,19 @@ function restore(): void {
   if (restored) return;
   restored = true;
 
-  const items = read<RequestItem[]>(ITEMS_KEY, []);
+  const items = read<RequestItem[]>(ITEMS_KEY, []).filter(isRequestItem);
   const favourites = read<string[]>(FAVOURITES_KEY, []);
   if (items.length === 0 && favourites.length === 0) return;
 
   snapshot = { items, favourites };
+}
+
+/** Отсекает записи от прежней версии формата, чтобы форма не падала. */
+function isRequestItem(value: unknown): value is RequestItem {
+  return typeof value === 'object'
+    && value !== null
+    && typeof (value as RequestItem).productKey === 'string'
+    && typeof (value as RequestItem).price === 'number';
 }
 
 function subscribe(listener: () => void): () => void {
@@ -87,18 +106,19 @@ function commit(next: Snapshot): void {
   for (const listener of listeners) listener();
 }
 
-/* ------------------------------------------------------------- provider */
+/* ----------------------------------------------------------------- провайдер */
 
 interface RequestState extends Snapshot {
   isOpen: boolean;
-  /** Set briefly after an item is added so the badge can animate. */
+  /** Ставится ненадолго после добавления, чтобы счётчик мог анимироваться. */
   lastAdded: string | null;
-  add: (product: CatalogProduct) => void;
-  remove: (matchKey: string) => void;
+  subtotal: number;
+  add: (listing: CatalogListing, variant: CatalogProduct) => void;
+  remove: (productKey: string) => void;
   clear: () => void;
-  has: (matchKey: string) => boolean;
-  toggleFavourite: (matchKey: string) => void;
-  isFavourite: (matchKey: string) => boolean;
+  has: (productKey: string) => boolean;
+  toggleFavourite: (slug: string) => void;
+  isFavourite: (slug: string) => boolean;
   open: () => void;
   setOpen: (open: boolean) => void;
 }
@@ -121,24 +141,29 @@ export function RequestProvider({ children }: { children: React.ReactNode }) {
     return () => window.clearTimeout(timer);
   }, [lastAdded]);
 
-  const add = useCallback((product: CatalogProduct) => {
-    if (!snapshot.items.some((item) => item.matchKey === product.matchKey)) {
+  const add = useCallback((listing: CatalogListing, variant: CatalogProduct) => {
+    if (!snapshot.items.some((item) => item.productKey === variant.matchKey)) {
       commit({
         ...snapshot,
         items: [...snapshot.items, {
-          matchKey: product.matchKey,
-          slug: product.slug,
-          title: product.title,
-          memoryLabel: product.memoryLabel,
-          color: product.color,
-          image: product.images[0],
-          price: product.price,
-          availability: product.availability,
+          productKey: variant.matchKey,
+          productSlug: listing.slug,
+          title: listing.title,
+          model: variant.model,
+          memory: variant.memory,
+          memoryLabel: variant.memoryLabel,
+          color: variant.color,
+          simType: variant.sim,
+          simLabel: variant.simLabel,
+          image: listing.images[0],
+          price: variant.price,
+          availability: variant.availability,
+          quantity: 1,
         }],
       });
     }
 
-    setLastAdded(product.matchKey);
+    setLastAdded(variant.matchKey);
   }, []);
 
   const value = useMemo<RequestState>(() => ({
@@ -146,20 +171,21 @@ export function RequestProvider({ children }: { children: React.ReactNode }) {
     favourites,
     isOpen,
     lastAdded,
+    subtotal: items.reduce((sum, item) => sum + item.price * item.quantity, 0),
     add,
-    remove: (matchKey) => commit({
+    remove: (productKey) => commit({
       ...snapshot,
-      items: snapshot.items.filter((item) => item.matchKey !== matchKey),
+      items: snapshot.items.filter((item) => item.productKey !== productKey),
     }),
     clear: () => commit({ ...snapshot, items: [] }),
-    has: (matchKey) => items.some((item) => item.matchKey === matchKey),
-    toggleFavourite: (matchKey) => commit({
+    has: (productKey) => items.some((item) => item.productKey === productKey),
+    toggleFavourite: (slug) => commit({
       ...snapshot,
-      favourites: snapshot.favourites.includes(matchKey)
-        ? snapshot.favourites.filter((key) => key !== matchKey)
-        : [...snapshot.favourites, matchKey],
+      favourites: snapshot.favourites.includes(slug)
+        ? snapshot.favourites.filter((key) => key !== slug)
+        : [...snapshot.favourites, slug],
     }),
-    isFavourite: (matchKey) => favourites.includes(matchKey),
+    isFavourite: (slug) => favourites.includes(slug),
     open: () => setIsOpen(true),
     setOpen: setIsOpen,
   }), [items, favourites, isOpen, lastAdded, add]);

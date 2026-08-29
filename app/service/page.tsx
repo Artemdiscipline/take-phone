@@ -98,7 +98,7 @@ export default function ServicePage() {
         <p className="mt-3 max-w-[620px] text-sm leading-relaxed text-ink-soft">
           Позвоните по номеру <a href={site.phoneHref} className="font-medium text-ink">{site.phone}</a>{' '}
           или напишите в{' '}
-          <a href={site.telegram} target="_blank" rel="noreferrer" className="font-medium text-accent">
+          <a href={site.telegramManager} target="_blank" rel="noreferrer" className="font-medium text-accent">
             Telegram
           </a>
           . Магазин и сервис работают по адресу {site.addressFull}, {site.workingHours.toLowerCase()}.

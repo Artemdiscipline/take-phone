@@ -1,9 +1,9 @@
 /**
- * Runtime configuration.
+ * Конфигурация времени выполнения.
  *
- * On Cloudflare Workers `process.env` is populated from the Worker bindings, so
- * the same accessor works locally (`.env.local`) and in production. Nothing in
- * this module may be imported from a client component.
+ * На Cloudflare Workers `process.env` наполняется из биндингов, поэтому один и
+ * тот же доступ работает локально (`.env.local`) и в проде. Этот модуль нельзя
+ * импортировать из клиентских компонентов.
  */
 function read(name: string): string | undefined {
   const value = process.env[name];
@@ -12,9 +12,9 @@ function read(name: string): string | undefined {
 
 export const env = {
   /**
-   * `fixtures` — bundled demo dataset (default).
-   * `live` — read agreed price-list endpoints. Sources without a configured
-   * feed URL report an error instead of silently falling back to demo data.
+   * `fixtures` — демонстрационный набор из репозитория (по умолчанию).
+   * `live` — чтение согласованных прайс-листов. Источник без настроенного
+   * адреса возвращает ошибку, а не подменяет данные демонстрационными.
    */
   get catalogMode(): 'fixtures' | 'live' {
     return read('CATALOG_MODE') === 'live' ? 'live' : 'fixtures';
@@ -36,17 +36,29 @@ export const env = {
     };
   },
 
-  /** Password for the staff panel. Without it the panel runs in demo mode. */
+  /** Пароль панели сотрудника. */
   get staffPassword(): string | undefined {
     return read('STAFF_PASSWORD');
   },
 
-  /** Secret used to sign the staff session cookie. */
+  /** Секрет для подписи cookie сессии сотрудника. */
   get staffSessionSecret(): string | undefined {
     return read('STAFF_SESSION_SECRET');
   },
 
-  /** Where confirmed order requests are delivered. Unset = demo mode. */
+  /**
+   * Разрешён ли демонстрационный вход без заданных секретов.
+   *
+   * Локальная разработка — да. Стенд, который специально помечен как превью, —
+   * тоже. Обычный production — нет: панель отдаёт ошибку конфигурации, а не
+   * открывается всем подряд.
+   */
+  get allowDemoStaffAccess(): boolean {
+    if (read('ALLOW_DEMO_STAFF_ACCESS') === '1') return true;
+    return process.env.NODE_ENV !== 'production';
+  },
+
+  /** Куда уходят подтверждённые заявки. Не задано — заявка только в базе. */
   get orderWebhookUrl(): string | undefined {
     return read('ORDER_WEBHOOK_URL');
   },
@@ -60,7 +72,7 @@ export const env = {
   },
 } as const;
 
-/** True when no real integrations are configured. Surfaced in the UI. */
-export function isDemoMode(): boolean {
+/** true, пока каталог собран из демонстрационного набора. */
+export function isDemoCatalog(): boolean {
   return env.catalogMode === 'fixtures';
 }

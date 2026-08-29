@@ -66,8 +66,8 @@ export function Header() {
             </span>
           </div>
           <div className="flex items-center gap-6">
-            <a className="transition hover:text-white" href={site.telegram} target="_blank" rel="noreferrer">
-              Telegram
+            <a className="transition hover:text-white" href={site.telegramManager} target="_blank" rel="noreferrer">
+              Написать менеджеру
             </a>
             <a className="flex items-center gap-1.5 transition hover:text-white" href={site.phoneHref}>
               <Phone className="size-3.5" aria-hidden />
@@ -163,19 +163,27 @@ export function Header() {
       {catalogOpen && (
         <div className="collapse-open hidden border-t border-line bg-paper lg:block">
           <div className="shell grid grid-cols-4 gap-2 py-6">
-            {categories.map((category) => (
-              <AppLink
-                key={category.id}
-                href={category.href}
-                onClick={() => setCatalogOpen(false)}
-                className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm transition hover:bg-surface ${
-                  category.ready ? 'font-medium' : 'text-ink-faint'
-                }`}
-              >
-                {category.label}
-                <span className="text-[11px] text-ink-faint">{category.note}</span>
-              </AppLink>
-            ))}
+            {categories.map((category) => category.href
+              ? (
+                <AppLink
+                  key={category.id}
+                  href={category.href}
+                  onClick={() => setCatalogOpen(false)}
+                  className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium transition hover:bg-surface"
+                >
+                  {category.label}
+                  <span className="text-[11px] text-ink-faint">{category.note}</span>
+                </AppLink>
+              )
+              : (
+                <span
+                  key={category.id}
+                  className="flex items-center justify-between rounded-xl px-4 py-3 text-sm text-ink-faint"
+                >
+                  {category.label}
+                  <span className="text-[11px]">{category.note}</span>
+                </span>
+              ))}
           </div>
         </div>
       )}

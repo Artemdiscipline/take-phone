@@ -14,41 +14,45 @@ import {
 import { AvailabilityChip } from '@/components/catalog/availability';
 import { ProductCard } from '@/components/catalog/product-card';
 import { useRequest } from '@/components/order/request-store';
-import { colorRu, formatMemory } from '@/lib/catalog/normalize';
-import type { CatalogProduct } from '@/lib/catalog/types';
+import { AppLink, useNavigate } from '@/components/site/app-link';
 import { isStaticPreview, withBase } from '@/lib/build-mode';
+import { colorRu, formatMemory } from '@/lib/catalog/normalize';
+import type { CatalogListing, CatalogProduct } from '@/lib/catalog/types';
 import { formatFreshness, formatPrice } from '@/lib/format';
 import { site, terms } from '@/lib/site';
-import { AppLink, useNavigate } from '@/components/site/app-link';
 
 export function ProductDetail({
-  product,
-  variants,
+  listing,
+  modelListings,
   related,
 }: {
-  product: CatalogProduct;
-  variants: CatalogProduct[];
-  related: CatalogProduct[];
+  listing: CatalogListing;
+  modelListings: CatalogListing[];
+  related: CatalogListing[];
 }) {
   const navigate = useNavigate();
   const { add, has, toggleFavourite, isFavourite, open } = useRequest();
+
   const [activeImage, setActiveImage] = useState(0);
+  const [variantId, setVariantId] = useState(listing.defaultVariantId);
 
-  const inRequest = has(product.matchKey);
-  const favourite = isFavourite(product.matchKey);
-  const soldOut = product.availability === 'out_of_stock';
+  const variant = listing.variants.find((item) => item.id === variantId)
+    ?? listing.variants[0];
 
-  const memories = dedupe(variants.map((variant) => variant.memory))
-    .sort((a, b) => a - b);
-  const colors = dedupe(variants.map((variant) => variant.color));
+  const inRequest = has(variant.matchKey);
+  const favourite = isFavourite(listing.slug);
+  const soldOut = variant.availability === 'out_of_stock';
+
+  const memories = dedupe(modelListings.map((item) => item.memory)).sort((a, b) => a - b);
+  const colors = dedupe(modelListings.map((item) => item.color));
 
   const gallery = dedupe([
-    product.images[0],
-    ...variants.map((variant) => variant.images[0]),
+    listing.images[0],
+    ...modelListings.map((item) => item.images[0]),
   ]).slice(0, 5);
 
-  const goTo = (next: CatalogProduct | undefined) => {
-    if (next && next.slug !== product.slug) navigate(`/product/${next.slug}`);
+  const goTo = (next: CatalogListing | undefined) => {
+    if (next && next.slug !== listing.slug) navigate(`/product/${next.slug}`);
   };
 
   return (
@@ -57,8 +61,8 @@ export function ProductDetail({
         <div>
           <div className="relative aspect-square overflow-hidden rounded-2xl bg-surface">
             <Image
-              src={withBase(gallery[activeImage] ?? product.images[0])}
-              alt={product.title}
+              src={withBase(gallery[activeImage] ?? listing.images[0])}
+              alt={listing.title}
               fill
               sizes="(max-width: 1024px) 100vw, 620px"
               priority
@@ -67,7 +71,7 @@ export function ProductDetail({
           </div>
 
           {gallery.length > 1 && (
-            <ul className="mt-3 flex gap-2" aria-label="Фотографии устройства">
+            <ul className="scroll-x mt-3 flex gap-2" aria-label="Фотографии устройства">
               {gallery.map((image, index) => (
                 <li key={image}>
                   <button
@@ -75,7 +79,7 @@ export function ProductDetail({
                     onClick={() => setActiveImage(index)}
                     aria-label={`Фотография ${index + 1}`}
                     aria-pressed={index === activeImage}
-                    className={`relative block size-[68px] overflow-hidden rounded-xl border bg-surface transition ${
+                    className={`relative block size-[68px] shrink-0 overflow-hidden rounded-xl border bg-surface transition ${
                       index === activeImage ? 'border-accent' : 'border-line hover:border-line-strong'
                     }`}
                   >
@@ -88,30 +92,30 @@ export function ProductDetail({
         </div>
 
         <div>
-          <div className="flex items-center justify-between gap-4">
-            <AvailabilityChip availability={product.availability} />
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <AvailabilityChip availability={variant.availability} />
             <span className="text-[12px] text-ink-faint">
-              Цена обновлена {formatFreshness(product.updatedAt, isStaticPreview)}
+              Цена обновлена {formatFreshness(variant.updatedAt, isStaticPreview)}
             </span>
           </div>
 
-          <h1 className="h2 mt-4">{product.model}</h1>
+          <h1 className="h2 mt-4">{listing.model}</h1>
           <p className="mt-2 text-sm text-ink-soft">
-            {product.memoryLabel} · {colorRu(product.color) ?? product.color} · {product.simLabel}
+            {listing.memoryLabel} · {colorRu(listing.color) ?? listing.color} · {variant.simLabel}
           </p>
 
-          <div className="mt-7 flex items-end gap-3">
+          <div className="mt-7 flex flex-wrap items-end gap-3">
             <span className="text-[32px] font-semibold leading-none tracking-[-0.035em]">
-              {formatPrice(product.price)}
+              {formatPrice(variant.price)}
             </span>
-            {product.oldPrice && (
+            {variant.oldPrice && (
               <span className="pb-1 text-[15px] text-ink-faint line-through">
-                {formatPrice(product.oldPrice)}
+                {formatPrice(variant.oldPrice)}
               </span>
             )}
           </div>
 
-          {product.availability === 'to_order' && (
+          {variant.availability === 'to_order' && (
             <p className="mt-3 rounded-xl bg-order-soft px-3.5 py-2.5 text-[13px] text-order">
               Устройство под заказ — цена уже включает скидку {formatPrice(terms.preorderDiscount)}.
               Срок поставки менеджер назовёт при подтверждении.
@@ -123,10 +127,10 @@ export function ProductDetail({
               <p className="field-label">Память</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {memories.map((memory) => {
-                  const target = variants.find(
-                    (variant) => variant.memory === memory && variant.color === product.color,
-                  ) ?? variants.find((variant) => variant.memory === memory);
-                  const active = memory === product.memory;
+                  const target = modelListings.find(
+                    (item) => item.memory === memory && item.color === listing.color,
+                  ) ?? modelListings.find((item) => item.memory === memory);
+                  const active = memory === listing.memory;
 
                   return (
                     <button
@@ -135,7 +139,9 @@ export function ProductDetail({
                       onClick={() => goTo(target)}
                       aria-pressed={active}
                       className={`h-11 rounded-xl border px-4 text-sm font-medium transition ${
-                        active ? 'border-accent bg-accent-soft text-accent' : 'border-line hover:border-line-strong'
+                        active
+                          ? 'border-accent bg-accent-soft text-accent'
+                          : 'border-line hover:border-line-strong'
                       }`}
                     >
                       {formatMemory(memory)}
@@ -151,10 +157,10 @@ export function ProductDetail({
               <p className="field-label">Цвет</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {colors.map((color) => {
-                  const target = variants.find(
-                    (variant) => variant.color === color && variant.memory === product.memory,
-                  ) ?? variants.find((variant) => variant.color === color);
-                  const active = color === product.color;
+                  const target = modelListings.find(
+                    (item) => item.color === color && item.memory === listing.memory,
+                  ) ?? modelListings.find((item) => item.color === color);
+                  const active = color === listing.color;
 
                   return (
                     <button
@@ -179,12 +185,32 @@ export function ProductDetail({
             </section>
           )}
 
+          {/*
+            Раньше версии eSIM и 2 SIM были двумя карточками каталога с общим
+            адресом. Теперь это выбор внутри товара: меняются цена и наличие.
+          */}
+          {listing.hasSimChoice && (
+            <section className="mt-6">
+              <p className="field-label">SIM-карты</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {listing.variants.map((option) => (
+                  <SimOption
+                    key={option.id}
+                    variant={option}
+                    active={option.id === variant.id}
+                    onSelect={() => setVariantId(option.id)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
           <div className="mt-8 flex gap-2">
             <button
               type="button"
               disabled={soldOut}
               onClick={() => {
-                add(product);
+                add(listing, variant);
                 open();
               }}
               className="flex h-13 flex-1 items-center justify-center gap-2 rounded-xl bg-plum px-6 text-sm font-medium text-white transition hover:bg-plum-soft disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-ink-faint"
@@ -195,12 +221,15 @@ export function ProductDetail({
 
             <button
               type="button"
-              onClick={() => toggleFavourite(product.matchKey)}
+              onClick={() => toggleFavourite(listing.slug)}
               aria-label={favourite ? 'Убрать из избранного' : 'Добавить в избранное'}
               aria-pressed={favourite}
               className="grid size-13 place-items-center rounded-xl border border-line transition hover:border-line-strong"
             >
-              <Heart className={`size-4 ${favourite ? 'fill-accent text-accent' : 'text-ink-soft'}`} aria-hidden />
+              <Heart
+                className={`size-4 ${favourite ? 'fill-accent text-accent' : 'text-ink-soft'}`}
+                aria-hidden
+              />
             </button>
           </div>
 
@@ -233,8 +262,9 @@ export function ProductDetail({
           </dl>
 
           <p className="mt-5 rounded-xl bg-surface p-4 text-[12px] leading-relaxed text-ink-soft">
-            Бронирование при самовывозе — предоплата {formatPrice(terms.reservationPrepayment)}.
-            Она засчитывается в стоимость устройства.
+            Для бронирования устройства до вашего приезда может потребоваться
+            предоплата {formatPrice(terms.reservationPrepayment)}. Менеджер согласует её
+            при подтверждении заявки.
           </p>
         </div>
       </div>
@@ -248,11 +278,55 @@ export function ProductDetail({
             </AppLink>
           </div>
           <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            {related.map((item) => <ProductCard key={item.id} product={item} />)}
+            {related.map((item) => <ProductCard key={item.id} listing={item} />)}
           </div>
         </section>
       )}
     </>
+  );
+}
+
+function SimOption({
+  variant,
+  active,
+  onSelect,
+}: {
+  variant: CatalogProduct;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  const unavailable = variant.availability === 'out_of_stock';
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={active}
+      className={`rounded-xl border p-3.5 text-left transition ${
+        active ? 'border-accent bg-accent-soft' : 'border-line hover:border-line-strong'
+      } ${unavailable ? 'opacity-60' : ''}`}
+    >
+      <span className="flex items-center justify-between gap-2">
+        <span className="text-sm font-medium">{variant.simLabel}</span>
+        {active && <Check className="size-4 shrink-0 text-accent" aria-hidden />}
+      </span>
+      <span className="mt-1.5 block text-[13px] font-semibold">{formatPrice(variant.price)}</span>
+      <span
+        className={`mt-0.5 block text-[11px] ${
+          variant.availability === 'in_stock'
+            ? 'text-stock'
+            : variant.availability === 'to_order'
+              ? 'text-order'
+              : 'text-ink-faint'
+        }`}
+      >
+        {variant.availability === 'in_stock'
+          ? 'В наличии'
+          : variant.availability === 'to_order'
+            ? 'Под заказ'
+            : 'Нет в наличии'}
+      </span>
+    </button>
   );
 }
 

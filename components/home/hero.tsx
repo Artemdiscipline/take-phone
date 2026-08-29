@@ -3,7 +3,7 @@ import { ArrowRight, MessageCircle } from 'lucide-react';
 
 import { AvailabilityLabel } from '@/components/catalog/availability';
 import { HERO_IMAGE } from '@/lib/catalog/images';
-import type { CatalogProduct } from '@/lib/catalog/types';
+import type { CatalogListing } from '@/lib/catalog/types';
 import { formatPrice } from '@/lib/format';
 import { site } from '@/lib/site';
 import { AppLink } from '@/components/site/app-link';
@@ -13,7 +13,7 @@ import { withBase } from '@/lib/build-mode';
  * First screen. The price and availability shown here come from the same
  * catalogue data as the cards below — no separate marketing numbers.
  */
-export function Hero({ featured }: { featured: CatalogProduct | null }) {
+export function Hero({ featured }: { featured: CatalogListing | null }) {
   return (
     <section className="border-b border-line bg-surface">
       <div className="shell grid items-center gap-8 py-10 lg:grid-cols-[0.92fr_1.08fr] lg:gap-12 lg:py-14">
@@ -53,7 +53,7 @@ export function Hero({ featured }: { featured: CatalogProduct | null }) {
               <ArrowRight className="size-4 transition group-hover:translate-x-0.5" aria-hidden />
             </AppLink>
             <a
-              href={site.telegram}
+              href={site.telegramManager}
               target="_blank"
               rel="noreferrer"
               className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-line bg-paper px-6 text-sm font-medium transition hover:border-line-strong"

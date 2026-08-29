@@ -43,3 +43,6 @@ next-env.d.ts
 
 # static preview build
 /.static-preview-stash/
+
+# локальные переменные wrangler dev
+.dev.vars

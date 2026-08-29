@@ -1,30 +1,33 @@
-import { aggregateOffers, toPublicProducts } from '@/lib/catalog/aggregate';
+import { aggregateOffers, buildListings } from '@/lib/catalog/aggregate';
 import type {
   CatalogFilters,
-  CatalogProduct,
+  CatalogListing,
   StaffProductView,
   SyncRun,
 } from '@/lib/catalog/types';
 import { env } from '@/lib/env';
-import { getRepository } from '@/lib/repositories';
+import { getRepository, getRepositoryKind } from '@/lib/repositories';
+import type { RepositoryKind } from '@/lib/repositories';
 import { createSourceAdapters } from '@/lib/sources/registry';
 
-/** How long aggregated offers are considered fresh before a re-sync. */
+/** Как долго собранные предложения считаются свежими до повторной синхронизации. */
 const FRESHNESS_MS = 5 * 60_000;
 
 export interface PublicCatalog {
-  products: CatalogProduct[];
-  /** Newest offer timestamp across the catalogue. */
+  listings: CatalogListing[];
+  /** Самая поздняя отметка обновления по каталогу. */
   updatedAt: string | null;
+  /** true, пока каталог собран из демонстрационного набора. */
+  demoData: boolean;
 }
 
 /**
- * Makes sure the store holds offers, running a synchronisation when the data is
- * missing or stale. Errors from individual sources never empty the catalogue —
- * the previous offers of a failing source are kept.
+ * Гарантирует, что в хранилище есть предложения: запускает синхронизацию, если
+ * данных нет или они устарели. Ошибка отдельного источника не очищает каталог —
+ * его прошлые предложения остаются на месте.
  */
 async function ensureOffers(): Promise<void> {
-  const repository = getRepository();
+  const repository = await getRepository();
   const [lastRun] = await repository.listSyncRuns(1);
 
   if (lastRun) {
@@ -36,14 +39,13 @@ async function ensureOffers(): Promise<void> {
 }
 
 /**
- * Runs every source adapter and stores the result.
+ * Прогоняет все адаптеры источников и сохраняет результат.
  *
- * In `fixtures` mode this reads the bundled demo dataset; in `live` mode it
- * reads the configured price-list endpoints. Sources that fail are reported and
- * keep their previously stored offers.
+ * В режиме `fixtures` читается демонстрационный набор, в `live` — настроенные
+ * прайс-листы. Упавший источник попадает в журнал и сохраняет прошлые данные.
  */
 export async function runSync(): Promise<SyncRun> {
-  const repository = getRepository();
+  const repository = await getRepository();
   const adapters = createSourceAdapters();
   const startedAt = new Date().toISOString();
 
@@ -52,7 +54,7 @@ export async function runSync(): Promise<SyncRun> {
       const offers = await adapter.fetchProducts();
       await repository.replaceOffers(adapter.id, offers);
     } catch {
-      // Status is captured by the adapter; previous offers stay in place.
+      // Статус уже записан адаптером; прошлые предложения не трогаем.
     }
   }));
 
@@ -82,7 +84,8 @@ export async function runSync(): Promise<SyncRun> {
 
 async function loadViews(): Promise<StaffProductView[]> {
   await ensureOffers();
-  const repository = getRepository();
+
+  const repository = await getRepository();
   const [offers, rules] = await Promise.all([
     repository.listOffers(),
     repository.getMarkupRules(),
@@ -91,82 +94,86 @@ async function loadViews(): Promise<StaffProductView[]> {
   return aggregateOffers(offers, rules);
 }
 
-/** Public catalogue. Contains no source or wholesale information. */
+/** Публичный каталог. Никаких поставщиков и закупочных цен. */
 export async function getPublicCatalog(): Promise<PublicCatalog> {
   const views = await loadViews();
-  const products = toPublicProducts(views);
+  const listings = buildListings(views);
 
   return {
-    products,
-    updatedAt: products.map((product) => product.updatedAt).sort().at(-1) ?? null,
+    listings,
+    updatedAt: listings.map((listing) => listing.updatedAt).sort().at(-1) ?? null,
+    demoData: env.catalogMode === 'fixtures',
   };
 }
 
-export async function getProductBySlug(slug: string): Promise<CatalogProduct | null> {
-  const { products } = await getPublicCatalog();
-  return products.find((product) => product.slug === slug) ?? null;
+export async function getListingBySlug(slug: string): Promise<CatalogListing | null> {
+  const { listings } = await getPublicCatalog();
+  return listings.find((listing) => listing.slug === slug) ?? null;
 }
 
-/** Other finishes and capacities of the same model. */
-export async function getRelatedProducts(
-  product: CatalogProduct,
+/** Другие цвета и объёмы той же модели. */
+export async function getRelatedListings(
+  listing: CatalogListing,
   limit = 4,
-): Promise<CatalogProduct[]> {
-  const { products } = await getPublicCatalog();
+): Promise<CatalogListing[]> {
+  const { listings } = await getPublicCatalog();
 
-  const sameModel = products.filter(
-    (candidate) => candidate.model === product.model && candidate.id !== product.id,
+  const sameModel = listings.filter(
+    (candidate) => candidate.model === listing.model && candidate.slug !== listing.slug,
   );
-  const otherModels = products.filter(
-    (candidate) => candidate.model !== product.model && candidate.availability === 'in_stock',
+  const otherModels = listings.filter(
+    (candidate) => candidate.model !== listing.model && candidate.availability === 'in_stock',
   );
 
   return [...sameModel, ...otherModels].slice(0, limit);
 }
 
-/** Every stored finish of a model, used by the colour picker. */
-export async function getModelVariants(product: CatalogProduct): Promise<CatalogProduct[]> {
-  const { products } = await getPublicCatalog();
-  return products.filter((candidate) => candidate.model === product.model);
+/** Все позиции той же модели — для переключателей памяти и цвета. */
+export async function getModelListings(listing: CatalogListing): Promise<CatalogListing[]> {
+  const { listings } = await getPublicCatalog();
+  return listings.filter((candidate) => candidate.model === listing.model);
 }
 
 export interface StaffOverview {
   mode: 'fixtures' | 'live';
+  storage: RepositoryKind;
   views: StaffProductView[];
   runs: SyncRun[];
-  rules: Awaited<ReturnType<ReturnType<typeof getRepository>['getMarkupRules']>>;
-  orders: Awaited<ReturnType<ReturnType<typeof getRepository>['listOrders']>>;
+  rules: Awaited<ReturnType<Awaited<ReturnType<typeof getRepository>>['getMarkupRules']>>;
+  orders: Awaited<ReturnType<Awaited<ReturnType<typeof getRepository>>['listOrders']>>;
 }
 
-/** Full internal picture — only ever rendered behind the staff session check. */
+/** Полный внутренний срез — рендерится только за проверкой сессии сотрудника. */
 export async function getStaffOverview(): Promise<StaffOverview> {
   const views = await loadViews();
-  const repository = getRepository();
-  const [runs, rules, orders] = await Promise.all([
+  const repository = await getRepository();
+
+  const [runs, rules, orders, storage] = await Promise.all([
     repository.listSyncRuns(5),
     repository.getMarkupRules(),
-    repository.listOrders(20),
+    repository.listOrders(100),
+    getRepositoryKind(),
   ]);
 
-  return { mode: env.catalogMode, views, runs, rules, orders };
+  return { mode: env.catalogMode, storage, views, runs, rules, orders };
 }
 
-/** Server-side filtering, mirrored by the client for instant interaction. */
-export function filterProducts(
-  products: CatalogProduct[],
+/** Фильтрация на сервере; клиент повторяет её для мгновенной реакции. */
+export function filterListings(
+  listings: CatalogListing[],
   filters: CatalogFilters,
-): CatalogProduct[] {
+): CatalogListing[] {
   const query = filters.query?.trim().toLowerCase() ?? '';
 
-  const filtered = products.filter((product) => {
-    if (filters.category && product.category !== filters.category) return false;
-    if (filters.generation && product.generation !== filters.generation) return false;
-    if (filters.memory && product.memory !== filters.memory) return false;
-    if (filters.color && product.color !== filters.color) return false;
-    if (filters.onlyAvailable && product.availability !== 'in_stock') return false;
+  const filtered = listings.filter((listing) => {
+    if (filters.category && listing.category !== filters.category) return false;
+    if (filters.generation && listing.generation !== filters.generation) return false;
+    if (filters.memory && listing.memory !== filters.memory) return false;
+    if (filters.color && listing.color !== filters.color) return false;
+    if (filters.onlyAvailable && listing.availability !== 'in_stock') return false;
 
     if (query) {
-      const haystack = `${product.title} ${product.model} ${product.memoryLabel} ${product.color}`.toLowerCase();
+      const haystack = `${listing.title} ${listing.model} ${listing.memoryLabel} ${listing.color}`.toLowerCase();
       if (!haystack.includes(query)) return false;
     }
 

@@ -36,7 +36,7 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: 'Некорректное значение наценки' }, { status: 422 });
   }
 
-  const repository = getRepository();
+  const repository = await getRepository();
 
   if (payload.level === 'global') {
     if (value === null) {

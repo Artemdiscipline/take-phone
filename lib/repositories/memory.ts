@@ -5,18 +5,20 @@ import type {
   SourceOffer,
   SyncRun,
 } from '@/lib/catalog/types';
+import { buildOrderId, buildPublicNumber } from './order-number';
 import type {
   CatalogRepository,
   MarkupOverride,
+  OrderUpdate,
   StoredOrder,
 } from './types';
 
 /**
- * In-memory repository used until a database is provisioned.
+ * Хранилище в памяти процесса.
  *
- * State lives for the lifetime of the server instance: on Cloudflare Workers
- * that means a single isolate, so markup edits and orders are not durable. This
- * is intentional for the demo and is surfaced in the staff panel.
+ * Используется локально и в статическом превью. Данные живут до перезапуска,
+ * поэтому для рабочего деплоя подключается `D1CatalogRepository` — выбор
+ * делается в `lib/repositories/index.ts`.
  */
 interface MemoryState {
   offers: Map<SourceId, SourceOffer[]>;
@@ -42,6 +44,8 @@ function state(): MemoryState {
 }
 
 export class MemoryCatalogRepository implements CatalogRepository {
+  readonly kind = 'memory' as const;
+
   async replaceOffers(source: SourceId, offers: SourceOffer[]): Promise<void> {
     state().offers.set(source, offers);
   }
@@ -86,20 +90,53 @@ export class MemoryCatalogRepository implements CatalogRepository {
     return state().runs.slice(0, limit);
   }
 
-  async createOrder(order: Omit<StoredOrder, 'id' | 'createdAt'>): Promise<StoredOrder> {
+  async createOrder(
+    order: Omit<StoredOrder, 'id' | 'publicNumber' | 'createdAt' | 'updatedAt' | 'history'>,
+  ): Promise<StoredOrder> {
+    const id = buildOrderId();
+    const createdAt = new Date();
+    const timestamp = createdAt.toISOString();
+
     const stored: StoredOrder = {
       ...order,
-      id: `TP-${Date.now().toString(36).toUpperCase()}`,
-      createdAt: new Date().toISOString(),
+      id,
+      publicNumber: buildPublicNumber(createdAt, id),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      history: [{ status: order.status, at: timestamp }],
     };
 
     state().orders.unshift(stored);
-    state().orders.splice(100);
-    return stored;
+    state().orders.splice(200);
+    return structuredClone(stored);
   }
 
-  async listOrders(limit = 20): Promise<StoredOrder[]> {
-    return state().orders.slice(0, limit);
+  async listOrders(limit = 100): Promise<StoredOrder[]> {
+    return structuredClone(state().orders.slice(0, limit));
+  }
+
+  async getOrder(id: string): Promise<StoredOrder | null> {
+    const found = state().orders.find((order) => order.id === id);
+    return found ? structuredClone(found) : null;
+  }
+
+  async updateOrder(id: string, update: OrderUpdate): Promise<StoredOrder | null> {
+    const order = state().orders.find((candidate) => candidate.id === id);
+    if (!order) return null;
+
+    const now = new Date().toISOString();
+
+    if (update.status && update.status !== order.status) {
+      order.status = update.status;
+      order.history = [...order.history, { status: update.status, at: now, note: update.note }];
+    }
+
+    if (update.staffComment !== undefined) {
+      order.staffComment = update.staffComment;
+    }
+
+    order.updatedAt = now;
+    return structuredClone(order);
   }
 }
 

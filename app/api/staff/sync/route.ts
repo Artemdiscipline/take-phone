@@ -3,19 +3,15 @@ import { runSync } from '@/lib/server/catalog-service';
 
 export const dynamic = 'force-dynamic';
 
-/** Manual synchronisation trigger. Staff session required. */
+/** Ручная синхронизация. Требует сессии сотрудника. */
 export async function POST(): Promise<Response> {
   if (!await hasStaffSession()) {
     return Response.json({ error: 'Нет доступа' }, { status: 401 });
   }
 
   try {
-    const run = await runSync();
-    return Response.json(run);
+    return Response.json(await runSync());
   } catch {
-    return Response.json(
-      { error: 'Синхронизация не выполнена' },
-      { status: 502 },
-    );
+    return Response.json({ error: 'Синхронизация не выполнена' }, { status: 502 });
   }
 }

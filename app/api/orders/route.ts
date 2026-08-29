@@ -19,14 +19,26 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const order = await submitOrder(validation.value);
 
+    // Покупателю возвращаем только то, что показываем на экране успеха.
     return Response.json({
-      id: order.id,
+      publicNumber: order.publicNumber,
+      createdAt: order.createdAt,
+      subtotal: order.subtotal,
+      cardFee: order.cardFee,
       total: order.total,
+      delivery: order.delivery,
+      payment: order.payment,
+      reservationPrepayment: order.reservationPrepayment,
       delivered: order.delivered,
+      items: order.items.map((item) => ({
+        title: item.title,
+        simLabel: item.simLabel,
+        price: item.price,
+      })),
     });
   } catch {
     return Response.json(
-      { error: 'Не удалось передать заявку. Позвоните нам — мы оформим вручную.' },
+      { error: 'Не удалось сохранить заявку. Позвоните нам — оформим вручную.' },
       { status: 502 },
     );
   }
