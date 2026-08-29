@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import {
   AlertTriangle,
   ArrowUpDown,
@@ -28,6 +28,24 @@ interface Filters {
   sort: SortOrder;
 }
 
+/**
+ * Строка поиска из адреса.
+ *
+ * В обычной сборке её читает сервер и передаёт в `initialQuery`. В статической
+ * витрине страница собрана заранее и про query ничего не знает, поэтому адрес
+ * приходится читать в браузере. `useSyncExternalStore` — ровно тот случай:
+ * источник внешний, а серверный снимок остаётся прежним, так что гидратация
+ * не расходится.
+ */
+function subscribeToLocation(onChange: () => void): () => void {
+  window.addEventListener('popstate', onChange);
+  return () => window.removeEventListener('popstate', onChange);
+}
+
+function readUrlQuery(): string {
+  return new URLSearchParams(window.location.search).get('q') ?? '';
+}
+
 const EMPTY_FILTERS: Filters = {
   query: '',
   generation: 'all',
@@ -53,11 +71,25 @@ export function CatalogBrowser({
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  const urlQuery = useSyncExternalStore(
+    subscribeToLocation,
+    readUrlQuery,
+    () => initialQuery,
+  );
+  const [appliedQuery, setAppliedQuery] = useState(initialQuery);
+
   // Рендер с сервера важнее последнего клиентского запроса. Правка во время
   // рендера избавляет от лишнего прохода через очередь эффектов.
   if (serverListings !== initialListings) {
     setServerListings(initialListings);
     setListings(initialListings);
+  }
+
+  // Адрес изменился (переход из шапки или кнопка «назад») — подставляем запрос.
+  // Ручные правки поля при этом не затираются: сравниваем именно с адресом.
+  if (appliedQuery !== urlQuery) {
+    setAppliedQuery(urlQuery);
+    setFilters((current) => ({ ...current, query: urlQuery }));
   }
 
   const refresh = useCallback(async () => {
