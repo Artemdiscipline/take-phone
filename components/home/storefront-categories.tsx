@@ -177,14 +177,25 @@ export function StorefrontCategories({ populated }: { populated: CategoryId[] })
                   href={href}
                   target={isReady ? undefined : '_blank'}
                   rel={isReady ? undefined : 'noreferrer'}
-                  className={`category-showcase-card group ${category.wide ? 'category-showcase-card--wide' : ''}`}
+                  className={`category-showcase-card group ${category.image ? 'category-showcase-card--photo' : ''} ${
+                    category.wide ? 'category-showcase-card--wide' : ''
+                  }`}
                   aria-label={`${category.title}: ${isReady ? 'открыть каталог' : 'уточнить у менеджера'}`}
                 >
                   <div className="relative z-10 flex min-w-0 flex-col justify-between self-stretch">
-                    <span className="grid size-10 place-items-center rounded-xl bg-paper/90 text-accent shadow-sm">
+                    {/*
+                      Рядом с фотографией на узкой плитке значок только отнимает
+                      высоту у текста — там категорию и так видно по снимку.
+                      Плитки без фотографии показывают его всегда.
+                    */}
+                    <span
+                      className={`size-10 place-items-center rounded-xl bg-paper/90 text-accent shadow-sm ${
+                        category.image ? 'hidden sm:grid' : 'grid'
+                      }`}
+                    >
                       <category.icon className="size-4.5" strokeWidth={1.7} aria-hidden />
                     </span>
-                    <div className="mt-8">
+                    <div className={category.image ? 'mt-0 sm:mt-8' : 'mt-8'}>
                       <h3 className="text-base font-semibold tracking-[-0.015em] sm:text-lg">
                         {category.title}
                       </h3>
@@ -207,6 +218,9 @@ export function StorefrontCategories({ populated }: { populated: CategoryId[] })
                           fill
                           sizes={category.wide ? '(max-width: 1024px) 46vw, 320px' : '(max-width: 640px) 45vw, 230px'}
                           loading="lazy"
+                          // next/image с `fill` подставляет свой инлайновый object-fit,
+                          // и класс его не перебивает — без этого снимок обрезался.
+                          style={{ objectFit: 'contain' }}
                           className="category-showcase-card__image object-contain"
                         />
                       </div>
