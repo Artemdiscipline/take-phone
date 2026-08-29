@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
-import { aggregateOffers, buildListings, toPublicProducts } from '@/lib/catalog/aggregate';
-import { buildMatchKey, buildSlug, canonicalColor, parseMacModel } from '@/lib/catalog/normalize';
+import {
+  aggregateOffers,
+  buildListings,
+  buildModelGroups,
+  toPublicProducts,
+} from '@/lib/catalog/aggregate';
+import {
+  buildMatchKey,
+  buildSlug,
+  canonicalColor,
+  canonicalConfiguration,
+  parseMacModel,
+} from '@/lib/catalog/normalize';
 import { defaultMarkupRules } from '@/lib/catalog/pricing';
 import type { SourceOffer } from '@/lib/catalog/types';
 import { buildFixtureOffers } from '@/lib/sources/fixtures/iphone-offers';
@@ -161,5 +172,97 @@ describe('публичные данные', () => {
     for (const source of ['first-apple', 'ice-apple', 'phone24'] as const) {
       expect(buildFixtureOffers(source).length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('модельные плашки', () => {
+  it('собираются из данных: каждая модель каталога получает свою плашку', async () => {
+    const listings = buildListings(aggregateOffers(await loadOffers(), defaultMarkupRules));
+    const groups = buildModelGroups(listings);
+
+    // Ни одна модель из данных не потеряна и ни одна не выдумана.
+    expect(new Set(groups.map((group) => group.modelSlug)))
+      .toEqual(new Set(listings.map((listing) => listing.modelSlug)));
+
+    for (const group of groups) {
+      const own = listings.filter((listing) => listing.modelSlug === group.modelSlug);
+      expect(group.listingCount).toBe(own.length);
+    }
+  });
+
+  it('цена плашки — самый дешёвый доступный вариант модели', async () => {
+    const listings = buildListings(aggregateOffers(await loadOffers(), defaultMarkupRules));
+
+    for (const group of buildModelGroups(listings)) {
+      const available = listings.filter(
+        (listing) => listing.modelSlug === group.modelSlug
+          && listing.availability !== 'out_of_stock',
+      );
+
+      // Раскупленная модель не показывает цену: она была бы недостижимой.
+      if (available.length === 0) expect(group.price).toBeNull();
+      else expect(group.price).toBe(Math.min(...available.map((listing) => listing.price)));
+    }
+  });
+
+  it('iPhone идут от новых к старым, а Ultra остаётся первым среди часов', async () => {
+    const listings = buildListings(aggregateOffers(await loadOffers(), defaultMarkupRules));
+    const groups = buildModelGroups(listings);
+
+    const iphones = groups.filter((group) => group.categorySlug === 'iphone');
+    expect(iphones.slice(0, 4).map((group) => group.modelSlug)).toEqual([
+      'iphone-17-pro-max',
+      'iphone-17-pro',
+      'iphone-air',
+      'iphone-17',
+    ]);
+
+    const watches = groups.filter((group) => group.categorySlug === 'apple-watch');
+    expect(watches[0].modelName).toContain('Ultra');
+  });
+
+  it('адрес плашки ведёт в свою категорию', async () => {
+    const listings = buildListings(aggregateOffers(await loadOffers(), defaultMarkupRules));
+
+    for (const group of buildModelGroups(listings)) {
+      expect(group.href).toBe(`/catalog/${group.categorySlug}/${group.modelSlug}`);
+    }
+  });
+});
+
+describe('часы', () => {
+  it('размер корпуса и ремешок остаются отдельными позициями', async () => {
+    const listings = buildListings(aggregateOffers(await loadOffers(), defaultMarkupRules));
+    const se = listings.filter((listing) => listing.modelSlug === 'apple-watch-se-2');
+
+    expect(new Set(se.map((listing) => listing.caseSize)).size).toBeGreaterThan(1);
+    expect(new Set(se.map((listing) => listing.configuration)).size).toBeGreaterThan(1);
+    // Позиции, различающиеся корпусом или ремешком, не сливаются в одну.
+    expect(new Set(se.map((listing) => listing.slug)).size).toBe(se.length);
+  });
+
+  it('GPS и GPS + Cellular остаются разными вариантами одной позиции', async () => {
+    const listings = buildListings(aggregateOffers(await loadOffers(), defaultMarkupRules));
+    const withCellular = listings.find(
+      (listing) => listing.category === 'watch'
+        && listing.variants.some((variant) => variant.sim === 'gps-cellular')
+        && listing.variants.some((variant) => variant.sim === 'gps'),
+    );
+
+    expect(withCellular).toBeDefined();
+    expect(new Set(withCellular?.variants.map((variant) => variant.sim)).size).toBe(2);
+  });
+});
+
+describe('комплектации', () => {
+  it('известное написание ремешка сводится к одному значению', () => {
+    expect(canonicalConfiguration('спортивный ремешок')).toBe('Sport Band');
+    expect(canonicalConfiguration('Sport Band')).toBe('Sport Band');
+  });
+
+  it('незнакомая комплектация сохраняет написание источника', () => {
+    // «16 ГБ ОЗУ» превращалось в «16 Гб Озу» из-за приведения к Title Case.
+    expect(canonicalConfiguration('16 ГБ ОЗУ')).toBe('16 ГБ ОЗУ');
+    expect(canonicalConfiguration('  24 ГБ   ОЗУ ')).toBe('24 ГБ ОЗУ');
   });
 });

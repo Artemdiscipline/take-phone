@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { ArrowRight, MessageCircle } from 'lucide-react';
+import { ArrowRight, Check, MapPin, MessageCircle } from 'lucide-react';
 
 import { AvailabilityLabel } from '@/components/catalog/availability';
 import { HERO_IMAGE } from '@/lib/catalog/images';
@@ -29,8 +29,8 @@ export function Hero({ featured }: { featured: CatalogListing | null }) {
           </h1>
 
           <p className="lede mt-5 max-w-[480px]">
-            Цены и наличие в каталоге обновляются автоматически. Вы выбираете устройство,
-            менеджер Take Phone подтверждает заказ и удобный способ получения.
+            Смартфоны, компьютеры, часы, аудио и игровая техника. Вы выбираете
+            устройство, менеджер Take Phone подтверждает наличие, цену и способ получения.
           </p>
 
           {featured && (
@@ -50,7 +50,7 @@ export function Hero({ featured }: { featured: CatalogListing | null }) {
 
           <div className="mt-8 flex flex-col gap-2.5 sm:flex-row">
             <AppLink
-              href="/catalog/iphone"
+              href="/catalog"
               className="group inline-flex h-12 items-center justify-center gap-2.5 rounded-xl bg-plum px-6 text-sm font-medium text-white transition hover:bg-plum-soft"
             >
               Смотреть каталог
@@ -66,9 +66,18 @@ export function Hero({ featured }: { featured: CatalogListing | null }) {
               Спросить менеджера
             </a>
           </div>
+
+          <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-[12px] font-medium text-ink-soft">
+            {['20 категорий техники', 'Гарантия до 5 лет', 'Сервис в магазине'].map((item) => (
+              <span key={item} className="inline-flex items-center gap-1.5">
+                <Check className="size-3.5 text-stock" strokeWidth={2.2} aria-hidden />
+                {item}
+              </span>
+            ))}
+          </div>
         </div>
 
-        <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-surface lg:aspect-[16/9]">
+        <div className="hero-visual-shell relative aspect-[16/10] overflow-hidden rounded-2xl bg-surface lg:aspect-[16/9]">
           <Image
             src={withBase(HERO_IMAGE)}
             alt="Линейка iPhone 17 Pro"
@@ -77,6 +86,19 @@ export function Hero({ featured }: { featured: CatalogListing | null }) {
             priority
             className="hero-photo object-cover"
           />
+
+          <div className="hero-availability-card absolute bottom-4 left-4 right-4 flex items-center justify-between gap-4 rounded-xl border border-white/60 bg-white/88 p-3.5 shadow-[0_18px_50px_-28px_rgba(38,20,46,0.55)] backdrop-blur-md sm:bottom-5 sm:left-5 sm:right-auto sm:min-w-[260px]">
+            <div className="flex items-center gap-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-stock-soft text-stock">
+                <MapPin className="size-4" aria-hidden />
+              </span>
+              <div>
+                <p className="text-[11px] text-ink-faint">Самовывоз в Тюмени</p>
+                <p className="mt-0.5 text-sm font-semibold">{site.address}</p>
+              </div>
+            </div>
+            <span className="status-dot bg-stock" aria-label="В наличии" />
+          </div>
         </div>
       </div>
     </section>

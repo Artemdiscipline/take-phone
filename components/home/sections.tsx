@@ -11,8 +11,8 @@ import {
   UserRoundCog,
 } from 'lucide-react';
 
-import { CategoryGrid } from '@/components/catalog/category-grid';
 import { ProductCard } from '@/components/catalog/product-card';
+import { StorefrontCategories } from '@/components/home/storefront-categories';
 import { Reveal } from '@/components/site/reveal';
 import type { CatalogListing, CategoryId } from '@/lib/catalog/types';
 import { site } from '@/lib/site';
@@ -51,26 +51,7 @@ export function TrustStrip() {
  * не в общий плоский список товаров.
  */
 export function Categories({ populated }: { populated: CategoryId[] }) {
-  return (
-    <section className="shell py-14 lg:py-20">
-      <Reveal>
-        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-          <div>
-            <p className="eyebrow">Категории</p>
-            <h2 className="h2 mt-3">Выберите технику</h2>
-          </div>
-          <p className="max-w-[420px] text-sm text-ink-soft sm:text-right">
-            Откройте категорию — и выберите модель по фотографии. Остальные
-            категории подключаем следующими этапами.
-          </p>
-        </div>
-      </Reveal>
-
-      <div className="mt-8">
-        <CategoryGrid populated={populated} />
-      </div>
-    </section>
-  );
+  return <StorefrontCategories populated={populated} />;
 }
 
 export function FeaturedProducts({ listings }: { listings: CatalogListing[] }) {
@@ -167,9 +148,66 @@ export function HowItWorks() {
   );
 }
 
+export function TradeInPromo() {
+  return (
+    <section id="trade-in" className="scroll-mt-28 border-y border-line bg-paper py-16 lg:py-24">
+      <div className="shell grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+        <Reveal>
+          <div className="trade-in-panel h-full overflow-hidden rounded-2xl bg-plum p-8 text-white sm:p-10">
+            <p className="eyebrow text-[#c3a4d0]">Trade-in</p>
+            <h2 className="h2 mt-4 max-w-[520px] text-white">Обменяйте старую технику на новую</h2>
+            <p className="mt-5 max-w-[500px] text-sm leading-relaxed text-white/60">
+              Принимаем устройства любых брендов. Оценим состояние в магазине и
+              учтём стоимость при покупке выбранной техники.
+            </p>
+
+            <div className="mt-8 flex flex-col gap-2.5 sm:flex-row sm:items-center">
+              <a
+                href={site.telegramManager}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-12 items-center justify-center rounded-xl bg-white px-6 text-sm font-medium text-plum transition hover:bg-[#f4edf7]"
+              >
+                Узнать предварительную оценку
+              </a>
+              <AppLink
+                href="/service#trade-in"
+                className="group inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/20 px-6 text-sm font-medium text-white transition hover:border-white/40"
+              >
+                Условия trade-in
+                <ArrowRight className="size-4 transition group-hover:translate-x-0.5" aria-hidden />
+              </AppLink>
+            </div>
+          </div>
+        </Reveal>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            ['01', 'Любой бренд', 'Apple, Samsung, Xiaomi и другая техника.'],
+            ['02', 'Честная оценка', 'Финальную сумму назовём после осмотра устройства.'],
+            ['03', 'Всё за один визит', 'Оценка, перенос данных и настройка новой техники.'],
+          ].map(([number, title, text], index) => (
+            <Reveal key={number} delay={index * 80} className="h-full">
+              <article className="group flex h-full min-h-[250px] flex-col justify-between rounded-2xl border border-line bg-surface p-6 transition hover:-translate-y-1 hover:border-line-strong hover:bg-paper hover:shadow-[0_22px_50px_-32px_rgba(38,20,46,0.45)]">
+                <span className="grid size-10 place-items-center rounded-xl bg-accent-soft text-[11px] font-semibold text-accent">
+                  {number}
+                </span>
+                <div className="mt-12">
+                  <h3 className="text-base font-semibold">{title}</h3>
+                  <p className="mt-2 text-[13px] leading-relaxed text-ink-soft">{text}</p>
+                </div>
+              </article>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function ServicePromo() {
   return (
-    <section className="shell py-16 lg:py-24">
+    <section id="service" className="shell scroll-mt-28 py-16 lg:py-24">
       <div className="grid items-center gap-10 lg:grid-cols-[1fr_1fr] lg:gap-16">
         <Reveal>
           <div>
@@ -219,7 +257,7 @@ export function ServicePromo() {
 
 export function ContactsBlock() {
   return (
-    <section className="border-t border-line bg-surface py-16 lg:py-20">
+    <section id="contacts" className="scroll-mt-28 border-t border-line bg-surface py-16 lg:py-20">
       <div className="shell grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
         <Reveal>
           <div className="h-full rounded-2xl bg-plum p-8 text-white sm:p-10">
@@ -253,7 +291,7 @@ export function ContactsBlock() {
         </Reveal>
 
         <Reveal delay={100}>
-          <div className="grid h-full gap-4 rounded-2xl border border-line bg-paper p-8">
+          <div id="delivery" className="grid h-full scroll-mt-28 gap-4 rounded-2xl border border-line bg-paper p-8">
             <Detail
               icon={Store}
               title="Самовывоз"
@@ -269,6 +307,18 @@ export function ContactsBlock() {
               title="Оплата"
               text="Перевод, наличные или банковская карта. При оплате картой добавляется 13,5%."
             />
+
+            {/* Блок на главной — короткий анонс; подробные условия живут на своих страницах. */}
+            <div className="mt-1 flex flex-wrap gap-x-5 gap-y-2 border-t border-line pt-4 text-sm font-medium text-accent">
+              <AppLink href="/delivery" className="group inline-flex items-center gap-1.5">
+                Доставка и оплата
+                <ArrowRight className="size-4 transition group-hover:translate-x-0.5" aria-hidden />
+              </AppLink>
+              <AppLink href="/contacts" className="group inline-flex items-center gap-1.5">
+                Контакты и схема проезда
+                <ArrowRight className="size-4 transition group-hover:translate-x-0.5" aria-hidden />
+              </AppLink>
+            </div>
           </div>
         </Reveal>
       </div>

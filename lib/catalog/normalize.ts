@@ -424,8 +424,17 @@ const FOLDED_CONFIGURATION_ALIASES: Record<string, string> = Object.fromEntries(
 
 export function canonicalConfiguration(value: string | undefined): string | undefined {
   if (!value) return undefined;
-  const key = foldColorKey(value);
-  return FOLDED_CONFIGURATION_ALIASES[key] ?? titleCase(key);
+
+  const alias = FOLDED_CONFIGURATION_ALIASES[foldColorKey(value)];
+  if (alias) return alias;
+
+  /*
+    Незнакомая комплектация возвращается как её написал источник — только с
+    прибранными пробелами. Приводить её к Title Case нельзя: «16 ГБ ОЗУ»
+    превращалось в «16 Гб Озу». На объединение предложений это не влияет:
+    ключ товара всё равно приводит комплектацию к нижнему регистру.
+  */
+  return value.replace(/\s+/g, ' ').trim();
 }
 
 const CONFIGURATION_RU: Record<string, string> = {

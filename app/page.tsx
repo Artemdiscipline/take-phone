@@ -4,6 +4,7 @@ import {
   FeaturedProducts,
   HowItWorks,
   ServicePromo,
+  TradeInPromo,
   TrustStrip,
 } from '@/components/home/sections';
 import { Hero } from '@/components/home/hero';
@@ -37,6 +38,7 @@ export default async function HomePage() {
       <Categories populated={populatedCategories} />
       <FeaturedProducts listings={highlights} />
       <HowItWorks />
+      <TradeInPromo />
       <ServicePromo />
       <ContactsBlock />
 

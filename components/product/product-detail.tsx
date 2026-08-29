@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import {
   Check,
   Heart,
@@ -17,7 +17,7 @@ import { ProductCard } from '@/components/catalog/product-card';
 import { useRequest } from '@/components/order/request-store';
 import { AppLink, useNavigate } from '@/components/site/app-link';
 import { isStaticPreview, withBase } from '@/lib/build-mode';
-import { colorRu, formatMemory } from '@/lib/catalog/normalize';
+import { colorRu, configurationRu, formatCaseSize, formatMemory } from '@/lib/catalog/normalize';
 import type { CatalogListing, CatalogProduct } from '@/lib/catalog/types';
 import { formatFreshness, formatPrice } from '@/lib/format';
 import { site, terms } from '@/lib/site';
@@ -37,6 +37,22 @@ export function ProductDetail({
   const [activeImage, setActiveImage] = useState(0);
   const [variantId, setVariantId] = useState(listing.defaultVariantId);
 
+  /*
+    Со страницы модели каждый вариант ведёт сюда со своим `?sim=`: карточки
+    «GPS» и «GPS + Cellular» внешне похожи, и открыться должна именно та, по
+    которой кликнули. Адрес — внешнее состояние, поэтому читается через
+    useSyncExternalStore: серверный снимок остаётся пустым и гидратация не
+    расходится, а в статической витрине это единственный доступный способ.
+  */
+  const urlSim = useSyncExternalStore(subscribeToLocation, readUrlSim, () => '');
+  const [appliedSim, setAppliedSim] = useState('');
+
+  if (appliedSim !== urlSim) {
+    setAppliedSim(urlSim);
+    const requested = listing.variants.find((item) => item.sim === urlSim);
+    if (requested) setVariantId(requested.id);
+  }
+
   const variant = listing.variants.find((item) => item.id === variantId)
     ?? listing.variants[0];
 
@@ -46,6 +62,17 @@ export function ProductDetail({
 
   const memories = dedupe(modelListings.map((item) => item.memory)).sort((a, b) => a - b);
   const colors = dedupe(modelListings.map((item) => item.color));
+
+  // Часы различаются не памятью, а корпусом и ремешком — переключатели те же
+  // по смыслу, поэтому собираются так же и появляются, когда есть из чего выбрать.
+  const caseSizes = dedupe(
+    modelListings.map((item) => item.caseSize).filter((value): value is number => Boolean(value)),
+  ).sort((a, b) => a - b);
+  const configurations = listing.category === 'mac'
+    ? []
+    : dedupe(
+      modelListings.map((item) => item.configuration).filter((value): value is string => Boolean(value)),
+    );
 
   const gallery = dedupe([
     listing.images[0],
@@ -110,10 +137,13 @@ export function ProductDetail({
 
           <h1 className="h2 mt-4">{listing.model}</h1>
           <p className="mt-2 text-sm text-ink-soft">
-            {listing.memoryLabel} · {colorRu(listing.color) ?? listing.color}
-            {listing.category === 'mac'
-              ? listing.configuration ? ` · ${listing.configuration}` : ''
-              : ` · ${variant.simLabel}`}
+            {/* У часов объёма памяти нет — на его месте размер корпуса. */}
+            {listing.caseSizeLabel ?? listing.memoryLabel} ·{' '}
+            {colorRu(listing.color) ?? listing.color}
+            {listing.configuration
+              ? ` · ${listing.category === 'mac' ? listing.configuration : configurationRu(listing.configuration)}`
+              : ''}
+            {listing.category === 'mac' ? '' : ` · ${variant.simLabel}`}
           </p>
 
           <CashPriceNote className="mt-7" />
@@ -165,6 +195,38 @@ export function ProductDetail({
             </section>
           )}
 
+          {caseSizes.length > 1 && (
+            <section className="mt-8">
+              <p className="field-label">Размер корпуса</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {caseSizes.map((size) => {
+                  const target = modelListings.find(
+                    (item) => item.caseSize === size
+                      && item.color === listing.color
+                      && item.configuration === listing.configuration,
+                  ) ?? modelListings.find((item) => item.caseSize === size);
+                  const active = size === listing.caseSize;
+
+                  return (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => goTo(target)}
+                      aria-pressed={active}
+                      className={`h-11 rounded-xl border px-4 text-sm font-medium transition ${
+                        active
+                          ? 'border-accent bg-accent-soft text-accent'
+                          : 'border-line hover:border-line-strong'
+                      }`}
+                    >
+                      {formatCaseSize(size)}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           {colors.length > 1 && (
             <section className="mt-6">
               <p className="field-label">Цвет</p>
@@ -198,13 +260,46 @@ export function ProductDetail({
             </section>
           )}
 
+          {configurations.length > 1 && (
+            <section className="mt-6">
+              <p className="field-label">Ремешок</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {configurations.map((option) => {
+                  const target = modelListings.find(
+                    (item) => item.configuration === option
+                      && item.color === listing.color
+                      && item.caseSize === listing.caseSize,
+                  ) ?? modelListings.find((item) => item.configuration === option);
+                  const active = option === listing.configuration;
+
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => goTo(target)}
+                      aria-pressed={active}
+                      className={`h-11 rounded-xl border px-4 text-sm transition ${
+                        active ? 'border-accent bg-accent-soft text-accent' : 'border-line hover:border-line-strong'
+                      }`}
+                    >
+                      {configurationRu(option)}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           {/*
             Раньше версии eSIM и 2 SIM были двумя карточками каталога с общим
             адресом. Теперь это выбор внутри товара: меняются цена и наличие.
           */}
           {listing.category !== 'mac' && listing.hasSimChoice && (
             <section className="mt-6">
-              <p className="field-label">SIM-карты</p>
+              {/* У часов в этом поле не SIM-карты, а наличие сотового модуля. */}
+              <p className="field-label">
+                {listing.variants.some((option) => option.sim.startsWith('gps')) ? 'Связь' : 'SIM-карты'}
+              </p>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 {listing.variants.map((option) => (
                   <SimOption
@@ -360,6 +455,15 @@ function Row({
       <dd className="flex-1 text-ink-soft">{value}</dd>
     </div>
   );
+}
+
+function subscribeToLocation(onChange: () => void): () => void {
+  window.addEventListener('popstate', onChange);
+  return () => window.removeEventListener('popstate', onChange);
+}
+
+function readUrlSim(): string {
+  return new URLSearchParams(window.location.search).get('sim') ?? '';
 }
 
 function dedupe<T>(values: T[]): T[] {

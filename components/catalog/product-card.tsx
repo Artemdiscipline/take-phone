@@ -43,7 +43,21 @@ export function ProductCard({
   const price = fixedVariant ? variant.price : listing.price;
   const oldPrice = fixedVariant ? variant.oldPrice : listing.oldPrice;
   const hasSimChoice = fixedVariant ? false : listing.hasSimChoice;
-  const title = fixedVariant ? variant.title : listing.title;
+
+  /*
+    На странице модели варианты идут отдельными карточками, и различие бывает
+    только в типе связи: «46 мм, глубокий чёрный» с GPS и с Cellular выглядели
+    бы одинаково. Поэтому в режиме варианта тип связи попадает в заголовок, а
+    ссылка ведёт сразу на нужный вариант.
+  */
+  const showSimInTitle = Boolean(fixedVariant) && listing.variants.length > 1;
+  const title = fixedVariant
+    ? showSimInTitle ? `${variant.title}, ${variant.simLabel}` : variant.title
+    : listing.title;
+
+  const href = fixedVariant && showSimInTitle
+    ? `/product/${listing.slug}?sim=${encodeURIComponent(variant.sim)}`
+    : `/product/${listing.slug}`;
 
   return (
     <article className="product-card group relative">
@@ -61,7 +75,7 @@ export function ProductCard({
       </button>
 
       <AppLink
-        href={`/product/${listing.slug}`}
+        href={href}
         className="block rounded-t-[15px] outline-none"
         aria-label={`Открыть ${listing.title}`}
       >
@@ -92,7 +106,7 @@ export function ProductCard({
         </div>
 
         <h3 className="mt-3 hyphens-auto break-words text-[15px] font-medium leading-snug tracking-[-0.01em]">
-          <AppLink href={`/product/${listing.slug}`} className="transition hover:text-accent">
+          <AppLink href={href} className="transition hover:text-accent">
             {title}
           </AppLink>
         </h3>

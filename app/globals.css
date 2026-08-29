@@ -248,6 +248,234 @@ summary {
   transition: background-color 320ms var(--ease);
 }
 
+/* ------------------------------------------------------------- navigation */
+
+/*
+  Пункт верхнего меню. Подчёркивание растёт от левого края, а не появляется
+  целиком: так переход читается как движение, а высота строки не скачет.
+*/
+.nav-link {
+  position: relative;
+  transition: color 220ms var(--ease);
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 1.5px;
+  background: var(--accent);
+  border-radius: 2px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 280ms var(--ease);
+}
+
+.nav-link:hover,
+.nav-link:focus-visible {
+  color: var(--accent);
+}
+
+.nav-link:hover::after,
+.nav-link:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* Выпадающее меню каталога: раскрывается сверху вниз, категории — по очереди. */
+.mega-menu {
+  animation: mega-menu-open 260ms var(--ease) both;
+  box-shadow: 0 26px 52px -34px rgba(38, 20, 46, 0.55);
+}
+
+.mega-menu__item {
+  animation: mega-menu-item 320ms var(--ease) both;
+}
+
+@keyframes mega-menu-open {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes mega-menu-item {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ----------------------------------------------------- one-page storefront */
+
+.hero-visual-shell {
+  box-shadow: 0 28px 80px -48px rgba(38, 20, 46, 0.52);
+}
+
+.hero-visual-shell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(118deg, transparent 36%, rgba(255, 255, 255, 0.2) 50%, transparent 64%);
+  transform: translateX(-110%);
+  animation: hero-shine 7.5s 1.6s ease-in-out infinite;
+}
+
+.hero-availability-card {
+  animation: availability-enter 680ms 480ms var(--ease) both;
+}
+
+.brand-marquee {
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+.brand-marquee__track {
+  display: flex;
+  width: max-content;
+  animation: brand-marquee 34s linear infinite;
+}
+
+.brand-marquee__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 28px;
+  padding-right: 28px;
+  color: var(--ink-faint);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.brand-marquee__item span {
+  color: rgba(109, 65, 128, 0.42);
+}
+
+.category-showcase-card {
+  position: relative;
+  display: grid;
+  min-height: 220px;
+  height: 100%;
+  overflow: hidden;
+  padding: 20px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  isolation: isolate;
+  transition:
+    transform 320ms var(--ease),
+    border-color 320ms var(--ease),
+    box-shadow 320ms var(--ease);
+}
+
+.category-showcase-card::before {
+  content: '';
+  position: absolute;
+  inset: auto -36px -52px auto;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 360ms var(--ease), transform 360ms var(--ease);
+}
+
+.category-showcase-card__media {
+  position: absolute;
+  z-index: -1;
+  top: 8px;
+  right: -8px;
+  width: 58%;
+  height: 62%;
+  pointer-events: none;
+}
+
+.category-showcase-card--wide .category-showcase-card__media {
+  top: 10px;
+  right: 2%;
+  width: 58%;
+  height: 88%;
+}
+
+.category-showcase-card__image {
+  transform: translateY(2px) scale(0.94);
+  transition: transform 620ms var(--ease);
+}
+
+.category-showcase-card__watermark {
+  position: absolute;
+  z-index: -1;
+  top: 18px;
+  right: 12px;
+  color: rgba(109, 65, 128, 0.09);
+  pointer-events: none;
+}
+
+.category-showcase-card__watermark svg {
+  width: 104px;
+  height: 104px;
+  transition: transform 520ms var(--ease), color 320ms var(--ease);
+}
+
+.trade-in-panel {
+  position: relative;
+  isolation: isolate;
+}
+
+.trade-in-panel::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  right: -90px;
+  bottom: -110px;
+  width: 310px;
+  height: 310px;
+  border: 58px solid rgba(195, 164, 208, 0.09);
+  border-radius: 50%;
+}
+
+@media (min-width: 640px) {
+  .category-showcase-card {
+    min-height: 240px;
+    padding: 24px;
+  }
+}
+
+@media (hover: hover) {
+  .category-showcase-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--line-strong);
+    box-shadow: 0 28px 62px -38px rgba(38, 20, 46, 0.48);
+  }
+
+  .category-showcase-card:hover::before {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .category-showcase-card:hover .category-showcase-card__image {
+    transform: translateY(-3px) scale(1.01);
+  }
+
+  .category-showcase-card:hover .category-showcase-card__watermark svg {
+    color: rgba(109, 65, 128, 0.15);
+    transform: translate(-3px, 3px) rotate(-3deg) scale(1.04);
+  }
+}
+
 /* ------------------------------------------------------------- animations */
 
 .reveal {
@@ -290,6 +518,34 @@ summary {
   }
   to {
     transform: translateY(-10px) scale(1.015);
+  }
+}
+
+@keyframes hero-shine {
+  0%,
+  42% {
+    transform: translateX(-110%);
+  }
+  62%,
+  100% {
+    transform: translateX(110%);
+  }
+}
+
+@keyframes availability-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes brand-marquee {
+  to {
+    transform: translateX(-50%);
   }
 }
 
@@ -416,6 +672,11 @@ summary {
 
   .hero-enter,
   .hero-photo,
+  .hero-visual-shell::after,
+  .hero-availability-card,
+  .brand-marquee__track,
+  .mega-menu,
+  .mega-menu__item,
   .sync-pulse,
   .spin,
   .collapse-open,
@@ -428,7 +689,12 @@ summary {
   .product-card,
   .product-card__image,
   .model-card,
-  .model-card__image {
+  .model-card__image,
+  .category-showcase-card,
+  .category-showcase-card__image,
+  .category-showcase-card__watermark svg,
+  .nav-link,
+  .nav-link::after {
     transition: none;
   }
 
@@ -439,7 +705,10 @@ summary {
     }
 
     .product-card:hover .product-card__image,
-    .model-card:hover .model-card__image {
+    .model-card:hover .model-card__image,
+    .category-showcase-card:hover,
+    .category-showcase-card:hover .category-showcase-card__image,
+    .category-showcase-card:hover .category-showcase-card__watermark svg {
       transform: none;
     }
   }

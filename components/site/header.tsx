@@ -103,9 +103,10 @@ export function Header({ populatedCategories = [] }: { populatedCategories?: Cat
           type="button"
           onClick={() => setCatalogOpen((value) => !value)}
           aria-expanded={catalogOpen}
+          aria-controls="catalog-menu"
           className="ml-4 hidden h-11 items-center gap-2 rounded-xl bg-plum px-4 text-[13px] font-medium text-white transition hover:bg-plum-soft lg:flex"
         >
-          <Menu className="size-4" aria-hidden />
+          <Menu className={`size-4 transition-transform duration-300 ${catalogOpen ? 'rotate-90' : ''}`} aria-hidden />
           Каталог
         </button>
 
@@ -125,7 +126,7 @@ export function Header({ populatedCategories = [] }: { populatedCategories?: Cat
 
         <nav className="hidden shrink-0 items-center gap-6 text-[13px] text-ink-soft xl:flex">
           {mainNav.slice(1).map((link) => (
-            <AppLink key={link.href} href={link.href} className="transition hover:text-accent">
+            <AppLink key={link.href} href={link.href} className="nav-link">
               {link.label}
             </AppLink>
           ))}
@@ -169,50 +170,71 @@ export function Header({ populatedCategories = [] }: { populatedCategories?: Cat
       </div>
 
       {/*
-        Выпадающее меню категорий. Каждая заполненная категория ведёт на свою
-        страницу с модельными плашками, а не в общий список товаров.
+        Меню каталога. Каждая заполненная категория ведёт на свою страницу с
+        модельными плашками — это и есть основной вход в каталог, поэтому
+        держим его на расстоянии одного клика из любой точки сайта.
       */}
       {catalogOpen && (
-        <div className="collapse-open hidden border-t border-line bg-paper shadow-[0_24px_48px_-32px_rgba(38,20,46,0.5)] lg:block">
-          <div className="shell py-6">
-            <p className="field-label">Категории</p>
+        <>
+          <div
+            id="catalog-menu"
+            className="mega-menu relative z-10 hidden border-t border-line bg-paper lg:block"
+          >
+            <div className="shell py-7">
+              <p className="field-label">Категории</p>
 
-            <div className="mt-4 grid grid-cols-4 gap-2">
-              {categories.map((category) => category.href
-                ? (
-                  <AppLink
-                    key={category.id}
-                    href={category.href}
-                    onClick={() => setCatalogOpen(false)}
-                    className="group flex items-center justify-between rounded-xl border border-transparent px-4 py-3.5 text-sm font-medium transition hover:border-line hover:bg-surface"
-                  >
-                    {category.label}
-                    <ChevronRight
-                      className="size-4 text-ink-faint transition group-hover:translate-x-0.5 group-hover:text-accent"
-                      aria-hidden
-                    />
-                  </AppLink>
-                )
-                : (
-                  <span
-                    key={category.id}
-                    className="flex items-center justify-between rounded-xl px-4 py-3.5 text-sm text-ink-faint"
-                  >
-                    {category.label}
-                    <span className="text-[11px]">{category.note}</span>
-                  </span>
-                ))}
+              <div className="mt-4 grid grid-cols-4 gap-2">
+                {categories.map((category, index) => category.href
+                  ? (
+                    <AppLink
+                      key={category.id}
+                      href={category.href}
+                      onClick={() => setCatalogOpen(false)}
+                      style={{ animationDelay: `${Math.min(index * 30, 210)}ms` }}
+                      className="mega-menu__item group flex items-center justify-between rounded-xl border border-transparent px-4 py-3.5 text-sm font-medium transition hover:border-line hover:bg-surface"
+                    >
+                      {category.label}
+                      <ChevronRight
+                        className="size-4 text-ink-faint transition group-hover:translate-x-0.5 group-hover:text-accent"
+                        aria-hidden
+                      />
+                    </AppLink>
+                  )
+                  : (
+                    <span
+                      key={category.id}
+                      style={{ animationDelay: `${Math.min(index * 30, 210)}ms` }}
+                      className="mega-menu__item flex items-center justify-between rounded-xl px-4 py-3.5 text-sm text-ink-faint"
+                    >
+                      {category.label}
+                      <span className="text-[11px]">{category.note}</span>
+                    </span>
+                  ))}
+              </div>
+
+              <AppLink
+                href="/catalog"
+                onClick={() => setCatalogOpen(false)}
+                className="mt-5 inline-flex text-[13px] font-medium text-accent transition hover:opacity-70"
+              >
+                Весь каталог целиком
+              </AppLink>
             </div>
-
-            <AppLink
-              href="/catalog"
-              onClick={() => setCatalogOpen(false)}
-              className="mt-4 inline-flex text-[13px] font-medium text-accent transition hover:opacity-70"
-            >
-              Весь каталог целиком
-            </AppLink>
           </div>
-        </div>
+
+          {/*
+            Подложка закрывает меню по клику мимо. Меню открывается только на
+            десктопе, поэтому кнопка спрятана от скринридеров: с клавиатуры
+            меню закрывает Esc.
+          */}
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-hidden
+            onClick={() => setCatalogOpen(false)}
+            className="fixed inset-0 top-[104px] hidden cursor-default bg-plum/10 lg:block"
+          />
+        </>
       )}
 
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
@@ -247,7 +269,7 @@ export function Header({ populatedCategories = [] }: { populatedCategories?: Cat
 
             {/*
               На телефоне каталог — это в первую очередь список категорий.
-              Полноэкранная панель уже открыта, поэтому вложенных «шторок» не
+              Панель уже открыта на весь экран, поэтому вложенных «шторок» не
               нужно: выбор категории делается одним касанием.
             */}
             <div className="border-b border-line p-4">
