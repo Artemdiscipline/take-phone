@@ -124,7 +124,7 @@ export function ProductCard({
           </p>
         )}
 
-        <div className="mt-auto flex items-end justify-between gap-3 pt-5">
+        <div className="product-card__buy mt-auto pt-5">
           <div className="min-w-0">
             <CashPriceNote className="mb-2" />
             {oldPrice && (
@@ -145,13 +145,17 @@ export function ProductCard({
             aria-label={inRequest
               ? `${title} уже в заявке`
               : `Добавить ${title} в заявку`}
-            className={`grid size-11 shrink-0 place-items-center rounded-xl transition disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-ink-faint ${
+            className={`product-card__buy-action grid size-11 shrink-0 place-items-center rounded-xl transition disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-ink-faint ${
               inRequest ? 'bg-stock-soft text-stock' : 'bg-plum text-white hover:bg-plum-soft'
             }`}
           >
             {inRequest
-              ? <Check className={`size-4 ${lastAdded === variant.matchKey ? 'added-pop' : ''}`} aria-hidden />
-              : <Plus className="size-4" aria-hidden />}
+              ? <Check className={`size-4 shrink-0 ${lastAdded === variant.matchKey ? 'added-pop' : ''}`} aria-hidden />
+              : <Plus className="size-4 shrink-0" aria-hidden />}
+            {/* Видна только в узкой раскладке — см. .product-card__buy-label. */}
+            <span className="product-card__buy-label">
+              {soldOut ? 'Нет в наличии' : inRequest ? 'В заявке' : 'В заявку'}
+            </span>
           </button>
         </div>
       </div>

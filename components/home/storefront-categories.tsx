@@ -196,7 +196,8 @@ export function StorefrontCategories({ populated }: { populated: CategoryId[] })
                       <category.icon className="size-4.5" strokeWidth={1.7} aria-hidden />
                     </span>
                     <div className={category.image ? 'mt-0 sm:mt-8' : 'mt-8'}>
-                      <h3 className="text-base font-semibold tracking-[-0.015em] sm:text-lg">
+                      {/* Длинные названия («Портативное аудио») на 320 px иначе не влезают. */}
+                      <h3 className="hyphens-auto break-words text-base font-semibold tracking-[-0.015em] sm:text-lg">
                         {category.title}
                       </h3>
                       <p className="mt-1 text-[12px] leading-relaxed text-ink-soft sm:text-[13px]">
